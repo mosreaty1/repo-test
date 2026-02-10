@@ -114,6 +114,54 @@
   to   { opacity: 1; transform: translateY(0) scale(1); }
 }
 
+/* ── TODAY COLUMN ───────────────────────── */
+.today-col {
+  @apply bg-purple-50/80 dark:bg-purple-900/20 text-purple-700 dark:text-purple-300 !important;
+}
+.today-cell {
+  @apply bg-purple-50/25 dark:bg-purple-900/5;
+}
+
+/* ── COMPACT SCHEDULE ───────────────────── */
+.sched-cell-compact {
+  @apply border border-gray-200 dark:border-gray-700 p-0.5
+         align-top bg-white dark:bg-gray-800/60
+         min-w-[80px] cursor-pointer
+         hover:bg-purple-50/60 dark:hover:bg-purple-900/10
+         transition-colors;
+}
+.lec-card.compact {
+  @apply rounded-md border-r-2 px-1.5 py-1 mb-0.5;
+}
+
+/* ── STAT CARD COLORED BORDER ───────────── */
+.stat-card-purple { @apply border-l-4 border-l-purple-400; }
+.stat-card-blue   { @apply border-l-4 border-l-blue-400; }
+.stat-card-green  { @apply border-l-4 border-l-green-400; }
+.stat-card-orange { @apply border-l-4 border-l-orange-400; }
+
+/* ── COVERAGE RING ──────────────────────── */
+.ring-svg circle { transition: stroke-dasharray 0.5s ease; }
+
+/* ── PAGE FADE TRANSITION ───────────────── */
+.page-fade-enter-active,
+.page-fade-leave-active {
+  transition: opacity 0.12s ease, transform 0.12s ease;
+}
+.page-fade-enter-from,
+.page-fade-leave-to {
+  opacity: 0;
+  transform: translateY(6px);
+}
+
+/* ── STICKY TABLE HEADER ────────────────── */
+.data-table thead tr th {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  @apply bg-gray-50 dark:bg-gray-700/80;
+}
+
 /* ── PRINT ─────────────────────────────── */
 @media print {
   @page { size: A3 landscape; margin: 0.8cm; }

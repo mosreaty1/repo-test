@@ -45,6 +45,7 @@ createApp({
     const showAssistant    = ref(true);
     const showConflictModal = ref(false);
     const showResetModal    = ref(false);
+    const compact           = ref(false);
 
     // Data management state
     const dataTab  = ref('professors');
@@ -113,6 +114,9 @@ createApp({
     // Cascade: when year changes reset major/section, when major changes reset section
     watch(() => sv.year,  () => { sv.major = ''; sv.section = ''; });
     watch(() => sv.major, () => { sv.section = ''; });
+    // Reports page cascade
+    watch(() => rp.year,  () => { rp.major = ''; rp.section = ''; });
+    watch(() => rp.major, () => { rp.section = ''; });
 
     // ===== DARK MODE =====
     function toggleDark() {
@@ -135,6 +139,21 @@ createApp({
     }
 
     function toggleSection(k) { openSections[k] = !openSections[k]; }
+
+    // Close topmost open modal (for Escape key)
+    function closeTopModal() {
+      if (lectureModal.show)         { lectureModal.show      = false; return; }
+      if (entityModal.show)          { entityModal.show       = false; return; }
+      if (deleteModal.show)          { deleteModal.show       = false; return; }
+      if (showConflictModal.value)   { showConflictModal.value = false; return; }
+      if (showResetModal.value)      { showResetModal.value    = false; return; }
+    }
+
+    // Return true if the given Arabic day name is today
+    function isToday(day) {
+      const MAP = ['الأحد', 'الاثنين', 'الثلاثاء', 'الأربعاء', 'الخميس', 'الجمعة', 'السبت'];
+      return day === MAP[new Date().getDay()];
+    }
 
     // ===== COMPUTED – DASHBOARD =====
     const professorWorkload = computed(() =>
@@ -306,6 +325,18 @@ createApp({
       return subjects.value.filter(s => lectures.value.some(l => l.subjectId === s.id && l.groupId === currentGroup.value.id));
     });
 
+    // Coverage percentage of subjects scheduled for current group
+    const groupCoverage = computed(() => {
+      if (!currentGroup.value || subjects.value.length === 0) return 0;
+      return Math.round(scheduledSubjects.value.length / subjects.value.length * 100);
+    });
+
+    // Global stats
+    const totalHours = computed(() => lectures.value.reduce((s, l) => s + l.duration, 0));
+    const todayArabic = computed(() => new Date().toLocaleDateString('ar-EG', {
+      weekday: 'long', year: 'numeric', month: 'long', day: 'numeric'
+    }));
+
     // ===== SCHEDULE ACTIONS =====
     function openAddLecture(day, hour) {
       lectureModal.id = null;
@@ -370,6 +401,14 @@ createApp({
       lectures.value = JSON.parse(prev);
       addLog('undo', 'تم التراجع عن آخر عملية');
       showToast('تم التراجع');
+    }
+
+    function duplicateLecture(lec) {
+      undoStack.value.push(JSON.stringify(lectures.value));
+      if (undoStack.value.length > 20) undoStack.value.shift();
+      lectures.value.push({ ...lec, id: genId() });
+      addLog('add_lecture', `تم نسخ محاضرة: ${getSubject(lec.subjectId)?.name || ''}`);
+      showToast('تم نسخ المحاضرة');
     }
 
     function confirmDelete() {
@@ -644,7 +683,9 @@ createApp({
       getProfessor, getLocation, getSubject, getGroup,
       isConflict, getCellLectures, lecColor, typeBadgeColor, isSubjectScheduled,
       openAddLecture, openAddWithSubject, openEditLecture, saveLecture, confirmDeleteLecture,
-      undo, confirmDelete,
+      undo, duplicateLecture, confirmDelete,
+      closeTopModal, isToday, compact,
+      groupCoverage, totalHours, todayArabic,
       dataTab, dataTabs, dataSearch,
       filteredProfessors, filteredLocations, filteredSubjects, filteredGroups, filteredLectures,
       locTypeLabel, locTypeColor, entityTypeLabel,

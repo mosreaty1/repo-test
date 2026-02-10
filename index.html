@@ -32,7 +32,7 @@
 </head>
 <body class="font-cairo bg-gray-50 dark:bg-gray-900 text-gray-800 dark:text-gray-100 min-h-screen transition-colors">
 
-<div id="app" v-cloak>
+<div id="app" v-cloak @keyup.esc.window="closeTopModal()">
 
   <!-- ══ NAVBAR ════════════════════════════════════════════════════════ -->
   <nav class="no-print sticky top-0 z-50 bg-white/95 dark:bg-gray-800/95 backdrop-blur shadow-sm border-b border-gray-200 dark:border-gray-700">
@@ -43,6 +43,7 @@
           <i class="fas fa-calendar-alt text-white text-sm"></i>
         </div>
         <span class="font-bold text-gray-800 dark:text-white hidden md:block text-sm">منظم الجداول الدراسية</span>
+        <span class="text-xs text-gray-400 hidden lg:block border-r border-gray-200 dark:border-gray-700 pr-2 mr-1">{{ todayArabic }}</span>
       </div>
       <!-- Nav links -->
       <div class="flex items-center gap-0.5 overflow-x-auto">
@@ -80,37 +81,55 @@
           <h1 class="text-2xl font-bold text-gray-900 dark:text-white">لوحة المعلومات</h1>
           <p class="text-sm text-gray-500 dark:text-gray-400 mt-0.5">نظرة عامة على الجداول الدراسية</p>
         </div>
-        <button @click="showResetModal = true" class="btn-outline text-xs px-3 py-1.5">
-          <i class="fas fa-rotate-left"></i><span class="hidden sm:inline">إعادة تعيين</span>
-        </button>
+        <div class="flex gap-2">
+          <button @click="currentPage = 'schedule'; openAddLecture(null, null)" class="btn-primary text-xs px-3 py-1.5">
+            <i class="fas fa-plus"></i><span class="hidden sm:inline">محاضرة جديدة</span>
+          </button>
+          <button @click="showResetModal = true" class="btn-outline text-xs px-3 py-1.5">
+            <i class="fas fa-rotate-left"></i><span class="hidden sm:inline">إعادة تعيين</span>
+          </button>
+        </div>
       </div>
 
       <!-- Stats -->
-      <div class="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-6">
-        <div class="card p-4 flex items-center gap-3 hover:shadow-md transition-shadow cursor-pointer" @click="currentPage='schedule'">
-          <div class="w-11 h-11 bg-purple-100 dark:bg-purple-900/40 rounded-xl flex items-center justify-center shrink-0">
+      <div class="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-4">
+        <div class="card stat-card-purple p-4 flex items-center gap-3 hover:shadow-md transition-all cursor-pointer group" @click="currentPage='schedule'">
+          <div class="w-11 h-11 bg-purple-100 dark:bg-purple-900/40 rounded-xl flex items-center justify-center shrink-0 group-hover:scale-110 transition-transform">
             <i class="fas fa-calendar-check text-purple-600 dark:text-purple-400 text-lg"></i>
           </div>
-          <div><div class="text-2xl font-bold text-gray-900 dark:text-white">{{ lectures.length }}</div><div class="text-xs text-gray-500">محاضرة</div></div>
+          <div>
+            <div class="text-2xl font-bold text-gray-900 dark:text-white">{{ lectures.length }}</div>
+            <div class="text-xs text-gray-500">محاضرة · {{ totalHours }}س</div>
+          </div>
         </div>
-        <div class="card p-4 flex items-center gap-3 hover:shadow-md transition-shadow cursor-pointer" @click="currentPage='data'">
-          <div class="w-11 h-11 bg-blue-100 dark:bg-blue-900/40 rounded-xl flex items-center justify-center shrink-0">
+        <div class="card stat-card-blue p-4 flex items-center gap-3 hover:shadow-md transition-all cursor-pointer group" @click="currentPage='data'; dataTab='locations'">
+          <div class="w-11 h-11 bg-blue-100 dark:bg-blue-900/40 rounded-xl flex items-center justify-center shrink-0 group-hover:scale-110 transition-transform">
             <i class="fas fa-building text-blue-600 dark:text-blue-400 text-lg"></i>
           </div>
           <div><div class="text-2xl font-bold text-gray-900 dark:text-white">{{ locations.length }}</div><div class="text-xs text-gray-500">مكان</div></div>
         </div>
-        <div class="card p-4 flex items-center gap-3 hover:shadow-md transition-shadow cursor-pointer" @click="currentPage='data'">
-          <div class="w-11 h-11 bg-green-100 dark:bg-green-900/40 rounded-xl flex items-center justify-center shrink-0">
+        <div class="card stat-card-green p-4 flex items-center gap-3 hover:shadow-md transition-all cursor-pointer group" @click="currentPage='data'; dataTab='professors'">
+          <div class="w-11 h-11 bg-green-100 dark:bg-green-900/40 rounded-xl flex items-center justify-center shrink-0 group-hover:scale-110 transition-transform">
             <i class="fas fa-user-tie text-green-600 dark:text-green-400 text-lg"></i>
           </div>
           <div><div class="text-2xl font-bold text-gray-900 dark:text-white">{{ professors.length }}</div><div class="text-xs text-gray-500">محاضر</div></div>
         </div>
-        <div class="card p-4 flex items-center gap-3 hover:shadow-md transition-shadow cursor-pointer" @click="currentPage='data'">
-          <div class="w-11 h-11 bg-orange-100 dark:bg-orange-900/40 rounded-xl flex items-center justify-center shrink-0">
+        <div class="card stat-card-orange p-4 flex items-center gap-3 hover:shadow-md transition-all cursor-pointer group" @click="currentPage='data'; dataTab='groups'">
+          <div class="w-11 h-11 bg-orange-100 dark:bg-orange-900/40 rounded-xl flex items-center justify-center shrink-0 group-hover:scale-110 transition-transform">
             <i class="fas fa-users text-orange-600 dark:text-orange-400 text-lg"></i>
           </div>
           <div><div class="text-2xl font-bold text-gray-900 dark:text-white">{{ groups.length }}</div><div class="text-xs text-gray-500">فرقة</div></div>
         </div>
+      </div>
+
+      <!-- Summary bar -->
+      <div class="card p-3 mb-5 flex flex-wrap gap-x-5 gap-y-1.5 text-xs text-gray-500 dark:text-gray-400">
+        <span class="flex items-center gap-1.5"><i class="fas fa-clock text-purple-400"></i>إجمالي الساعات: <b class="text-gray-800 dark:text-white">{{ totalHours }}</b> ساعة</span>
+        <span class="flex items-center gap-1.5"><i class="fas fa-book text-blue-400"></i>المواد: <b class="text-gray-800 dark:text-white">{{ subjects.length }}</b></span>
+        <span v-if="conflictsCount > 0" class="flex items-center gap-1.5 text-red-500 font-medium cursor-pointer hover:underline" @click="showConflictModal = true">
+          <i class="fas fa-triangle-exclamation"></i>{{ conflictsCount }} تعارض
+        </span>
+        <span v-else class="flex items-center gap-1.5 text-green-500"><i class="fas fa-circle-check"></i>لا توجد تعارضات</span>
       </div>
 
       <div class="grid grid-cols-1 lg:grid-cols-2 gap-5">
@@ -285,7 +304,11 @@
           <button v-if="undoStack.length > 0" @click="undo" class="btn-outline text-xs px-3 py-1.5">
             <i class="fas fa-rotate-left"></i>تراجع ({{ undoStack.length }})
           </button>
-          <button @click="showAssistant = !showAssistant" class="btn-outline text-xs px-3 py-1.5">
+          <button @click="compact = !compact" class="btn-outline text-xs px-3 py-1.5" :title="compact ? 'عرض موسع' : 'عرض مضغوط'">
+            <i :class="['fas', compact ? 'fa-expand' : 'fa-compress']"></i>
+            <span class="hidden sm:inline">{{ compact ? 'موسع' : 'مضغوط' }}</span>
+          </button>
+          <button @click="showAssistant = !showAssistant" :class="['btn-outline text-xs px-3 py-1.5', showAssistant ? 'bg-purple-50 dark:bg-purple-900/20 border-purple-300 dark:border-purple-600 text-purple-700 dark:text-purple-300' : '']">
             <i class="fas fa-robot"></i>المساعد
           </button>
           <button @click="openAddLecture(null, null)" class="btn-primary text-xs px-3 py-1.5">
@@ -307,28 +330,46 @@
       <div class="card p-3 mb-4">
         <div v-if="schedTab === 'class'" class="flex flex-wrap gap-2">
           <select v-model="sv.year" class="form-input flex-1 min-w-[140px] text-sm py-1.5">
-            <option value="">{{ uniqueYears[0] || 'اختر الفرقة' }}</option>
+            <option value="">-- الفرقة --</option>
             <option v-for="y in uniqueYears" :key="y" :value="y">{{ y }}</option>
           </select>
           <select v-model="sv.major" class="form-input flex-1 min-w-[180px] text-sm py-1.5">
-            <option value="">{{ uniqueMajors[0] || 'اختر التخصص' }}</option>
+            <option value="">-- التخصص --</option>
             <option v-for="m in uniqueMajors" :key="m" :value="m">{{ m }}</option>
           </select>
           <select v-model="sv.section" class="form-input flex-1 min-w-[130px] text-sm py-1.5">
-            <option value="">{{ uniqueSections[0] || 'اختر المجموعة' }}</option>
+            <option value="">-- المجموعة --</option>
             <option v-for="s in uniqueSections" :key="s" :value="s">{{ s }}</option>
           </select>
         </div>
         <div v-else-if="schedTab === 'professor'">
           <select v-model="sv.professor" class="form-input w-full max-w-sm text-sm py-1.5">
+            <option value="">-- اختر المحاضر --</option>
             <option v-for="p in professors" :key="p.id" :value="p.id">{{ p.name }}</option>
           </select>
         </div>
         <div v-else-if="schedTab === 'location'">
           <select v-model="sv.location" class="form-input w-full max-w-sm text-sm py-1.5">
+            <option value="">-- اختر المكان --</option>
             <option v-for="l in locations" :key="l.id" :value="l.id">{{ l.name }}</option>
           </select>
         </div>
+      </div>
+
+      <!-- Schedule info bar -->
+      <div v-if="visibleLectures.length > 0" class="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-gray-500 dark:text-gray-400 mb-3 px-1">
+        <span><i class="fas fa-calendar-check ml-1 text-purple-400"></i>{{ visibleLectures.length }} محاضرة</span>
+        <span><i class="fas fa-clock ml-1 text-blue-400"></i>{{ visibleLectures.reduce((s, l) => s + l.duration, 0) }} ساعة</span>
+        <span v-if="conflictsCount > 0" class="text-red-500 cursor-pointer hover:underline" @click="showConflictModal = true">
+          <i class="fas fa-triangle-exclamation ml-1"></i>{{ conflictsCount }} تعارض
+        </span>
+      </div>
+      <!-- Empty state: no group selected -->
+      <div v-if="schedTab === 'class' && !currentGroup"
+        class="card p-12 text-center text-gray-400 mb-4">
+        <i class="fas fa-users text-4xl text-gray-300 mb-4 block"></i>
+        <div class="font-semibold text-gray-500 mb-1">اختر الفرقة الدراسية</div>
+        <p class="text-sm">استخدم الفلاتر أعلاه لاختيار الفرقة والتخصص والمجموعة</p>
       </div>
 
       <div class="flex gap-4">
@@ -338,7 +379,11 @@
             <thead>
               <tr>
                 <th class="sched-header w-20">الوقت</th>
-                <th v-for="d in DAYS" :key="d" class="sched-header">{{ d }}</th>
+                <th v-for="d in DAYS" :key="d"
+                  :class="['sched-header', isToday(d) ? 'today-col' : '']">
+                  {{ d }}
+                  <span v-if="isToday(d)" class="block text-[9px] opacity-75 font-normal">اليوم</span>
+                </th>
               </tr>
             </thead>
             <tbody>
@@ -347,35 +392,55 @@
                   <div class="font-semibold">{{ formatSlot(h) }}</div>
                   <div class="text-gray-400 text-[10px]">{{ formatSlot(h + 1) }}</div>
                 </td>
-                <td v-for="d in DAYS" :key="d" class="sched-cell" @click.self="openAddLecture(d, h)">
+                <td v-for="d in DAYS" :key="d"
+                  :class="[compact ? 'sched-cell-compact' : 'sched-cell', isToday(d) ? 'today-cell' : '']"
+                  @click.self="openAddLecture(d, h)">
                   <div v-for="lec in getCellLectures(d, h)" :key="lec.id"
-                    :class="['lec-card text-xs', lecColor(lec), isConflict(lec.id) ? 'ring-2 ring-red-400 ring-offset-1' : '']"
+                    :class="['lec-card text-xs', compact ? 'compact' : '', lecColor(lec), isConflict(lec.id) ? 'ring-2 ring-red-400 ring-offset-1' : '']"
                     @click.stop="openEditLecture(lec)">
-                    <div v-if="isConflict(lec.id)" class="flex items-center gap-1 text-red-600 dark:text-red-400 text-[10px] mb-0.5 font-bold">
-                      <i class="fas fa-triangle-exclamation text-[10px]"></i>تعارض
-                    </div>
-                    <div class="font-bold text-gray-800 dark:text-gray-100 leading-snug truncate" :title="getSubject(lec.subjectId)?.name">
-                      {{ getSubject(lec.subjectId)?.name || '؟' }}
-                    </div>
-                    <div class="text-gray-500 dark:text-gray-400 leading-snug truncate mt-0.5" :title="getProfessor(lec.professorId)?.name">
-                      <i class="fas fa-user-tie text-[9px] ml-0.5"></i>{{ getProfessor(lec.professorId)?.name || '؟' }}
-                    </div>
-                    <div class="text-gray-400 dark:text-gray-500 leading-snug truncate" :title="getLocation(lec.locationId)?.name">
-                      <i class="fas fa-map-pin text-[9px] ml-0.5"></i>{{ getLocation(lec.locationId)?.name || '؟' }}
-                    </div>
-                    <div v-if="schedTab !== 'class'" class="text-gray-400 dark:text-gray-500 leading-snug truncate">
-                      <i class="fas fa-users text-[9px] ml-0.5"></i>{{ getGroup(lec.groupId)?.section || '؟' }}
-                    </div>
-                    <div class="flex items-center justify-between mt-1">
-                      <div class="flex items-center gap-1">
-                        <span :class="['badge text-[10px] px-1.5 py-0', typeBadgeColor(lec.type)]">{{ lec.type }}</span>
-                        <span v-if="lec.duration > 1" class="badge badge-gray text-[10px] px-1 py-0">{{ lec.duration }}س</span>
+                    <!-- Compact view: minimal info -->
+                    <template v-if="compact">
+                      <div v-if="isConflict(lec.id)" class="text-red-500 text-[9px] font-bold"><i class="fas fa-triangle-exclamation"></i></div>
+                      <div class="font-semibold truncate text-gray-800 dark:text-gray-100 text-[10px]" :title="getSubject(lec.subjectId)?.name">
+                        {{ getSubject(lec.subjectId)?.name || '؟' }}
                       </div>
-                      <button @click.stop="confirmDeleteLecture(lec)"
-                        class="w-5 h-5 rounded flex items-center justify-center text-gray-300 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors">
-                        <i class="fas fa-xmark text-[10px]"></i>
-                      </button>
-                    </div>
+                      <div class="text-gray-500 text-[9px] truncate">{{ getProfessor(lec.professorId)?.name || '؟' }}</div>
+                    </template>
+                    <!-- Normal view: full card -->
+                    <template v-else>
+                      <div v-if="isConflict(lec.id)" class="flex items-center gap-1 text-red-600 dark:text-red-400 text-[10px] mb-0.5 font-bold">
+                        <i class="fas fa-triangle-exclamation text-[10px]"></i>تعارض
+                      </div>
+                      <div class="font-bold text-gray-800 dark:text-gray-100 leading-snug truncate" :title="getSubject(lec.subjectId)?.name">
+                        {{ getSubject(lec.subjectId)?.name || '؟' }}
+                      </div>
+                      <div class="text-gray-500 dark:text-gray-400 leading-snug truncate mt-0.5" :title="getProfessor(lec.professorId)?.name">
+                        <i class="fas fa-user-tie text-[9px] ml-0.5"></i>{{ getProfessor(lec.professorId)?.name || '؟' }}
+                      </div>
+                      <div class="text-gray-400 dark:text-gray-500 leading-snug truncate" :title="getLocation(lec.locationId)?.name">
+                        <i class="fas fa-map-pin text-[9px] ml-0.5"></i>{{ getLocation(lec.locationId)?.name || '؟' }}
+                      </div>
+                      <div v-if="schedTab !== 'class'" class="text-gray-400 dark:text-gray-500 leading-snug truncate">
+                        <i class="fas fa-users text-[9px] ml-0.5"></i>{{ getGroup(lec.groupId)?.section || '؟' }}
+                      </div>
+                      <div class="flex items-center justify-between mt-1">
+                        <div class="flex items-center gap-1">
+                          <span :class="['badge text-[10px] px-1.5 py-0', typeBadgeColor(lec.type)]">{{ lec.type }}</span>
+                          <span v-if="lec.duration > 1" class="badge badge-gray text-[10px] px-1 py-0">{{ lec.duration }}س</span>
+                        </div>
+                        <div class="flex items-center gap-0.5">
+                          <button @click.stop="duplicateLecture(lec)"
+                            class="w-5 h-5 rounded flex items-center justify-center text-gray-300 hover:text-blue-500 hover:bg-blue-50 dark:hover:bg-blue-900/20 transition-colors"
+                            title="نسخ">
+                            <i class="fas fa-copy text-[9px]"></i>
+                          </button>
+                          <button @click.stop="confirmDeleteLecture(lec)"
+                            class="w-5 h-5 rounded flex items-center justify-center text-gray-300 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors">
+                            <i class="fas fa-xmark text-[10px]"></i>
+                          </button>
+                        </div>
+                      </div>
+                    </template>
                   </div>
                   <div v-if="getCellLectures(d, h).length === 0"
                     class="flex items-center justify-center h-8 text-gray-200 dark:text-gray-700 hover:text-purple-400 dark:hover:text-purple-500 transition-colors text-lg"
@@ -386,6 +451,14 @@
               </tr>
             </tbody>
           </table>
+          <!-- Color legend -->
+          <div class="mt-3 flex flex-wrap items-center gap-x-4 gap-y-1.5 text-xs text-gray-500 dark:text-gray-400">
+            <span class="flex items-center gap-1.5"><span class="w-3 h-3 rounded border-r-2 border-purple-500 bg-purple-50 dark:bg-purple-900/30 inline-block"></span>محاضرة</span>
+            <span class="flex items-center gap-1.5"><span class="w-3 h-3 rounded border-r-2 border-blue-500 bg-blue-50 dark:bg-blue-900/30 inline-block"></span>سيكشن</span>
+            <span class="flex items-center gap-1.5"><span class="w-3 h-3 rounded border-r-2 border-green-500 bg-green-50 dark:bg-green-900/30 inline-block"></span>معمل</span>
+            <span v-if="conflictsCount > 0" class="flex items-center gap-1.5 text-red-500"><span class="w-3 h-3 rounded ring-2 ring-red-400 inline-block"></span>تعارض</span>
+            <span class="mr-auto text-gray-400 text-[11px]">اضغط على خلية فارغة لإضافة محاضرة · اضغط على المحاضرة للتعديل</span>
+          </div>
         </div>
 
         <!-- Schedule Assistant -->
@@ -394,6 +467,28 @@
             <h3 class="font-semibold text-gray-700 dark:text-gray-300 mb-3 flex items-center gap-2 text-sm">
               <i class="fas fa-robot text-purple-500"></i>مساعد الجدول
             </h3>
+            <!-- Coverage ring -->
+            <div v-if="schedTab === 'class' && currentGroup" class="flex items-center gap-3 mb-4 p-3 bg-gray-50 dark:bg-gray-700/50 rounded-xl">
+              <div class="relative w-14 h-14 shrink-0">
+                <svg class="w-full h-full ring-svg" viewBox="0 0 36 36">
+                  <circle cx="18" cy="18" r="15.9" fill="none" stroke-width="3.5"
+                    class="stroke-gray-200 dark:stroke-gray-600"/>
+                  <circle cx="18" cy="18" r="15.9" fill="none" stroke-width="3.5"
+                    :stroke-dasharray="`${groupCoverage} ${100 - groupCoverage}`"
+                    stroke-dashoffset="25" stroke-linecap="round"
+                    :class="groupCoverage === 100 ? 'stroke-green-500' : groupCoverage >= 60 ? 'stroke-yellow-500' : 'stroke-red-400'"/>
+                </svg>
+                <div class="absolute inset-0 flex items-center justify-center text-xs font-bold text-gray-700 dark:text-gray-300">
+                  {{ groupCoverage }}%
+                </div>
+              </div>
+              <div class="text-xs">
+                <div class="font-semibold text-gray-700 dark:text-gray-300">تغطية المواد</div>
+                <div class="text-gray-500 dark:text-gray-400 mt-0.5">
+                  {{ scheduledSubjects.length }} / {{ scheduledSubjects.length + unscheduledSubjects.length }} مادة
+                </div>
+              </div>
+            </div>
             <div v-if="schedTab === 'class' && currentGroup">
               <div v-if="unscheduledSubjects.length > 0">
                 <div class="text-xs text-red-600 dark:text-red-400 font-semibold mb-1.5 flex items-center gap-1">
@@ -425,9 +520,10 @@
               <div v-if="unscheduledSubjects.length === 0 && scheduledSubjects.length === 0"
                 class="text-xs text-gray-400 text-center py-4">لا توجد مواد</div>
             </div>
-            <div v-else class="text-xs text-gray-400 text-center py-6">
-              <i class="fas fa-hand-point-up mb-2 text-xl block text-gray-300"></i>
-              اختر فرقة دراسية لعرض المساعد
+            <div v-else class="text-xs text-gray-400 text-center py-6 space-y-2">
+              <i class="fas fa-arrow-up-wide-short text-2xl text-gray-300 block"></i>
+              <div>اختر فرقة دراسية</div>
+              <div class="text-gray-300">لعرض المساعد والتغطية</div>
             </div>
           </div>
         </div>
@@ -439,11 +535,16 @@
       <div class="flex flex-wrap items-center justify-between gap-3 mb-4">
         <div>
           <h1 class="text-2xl font-bold text-gray-900 dark:text-white">إدارة البيانات</h1>
-          <p class="text-sm text-gray-500 mt-0.5">إضافة وتعديل وحذف البيانات</p>
+          <p class="text-sm text-gray-500 mt-0.5">إضافة وتعديل وحذف البيانات · {{ lectures.length }} محاضرة إجمالاً</p>
         </div>
-        <div class="relative">
-          <i class="fas fa-search absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 text-xs"></i>
-          <input v-model="dataSearch" type="text" placeholder="بحث في البيانات..." class="form-input pr-8 w-52 text-sm py-1.5" />
+        <div class="flex gap-2 items-center">
+          <div class="relative">
+            <i class="fas fa-search absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 text-xs"></i>
+            <input v-model="dataSearch" type="text" placeholder="بحث في البيانات..." class="form-input pr-8 w-48 text-sm py-1.5" />
+          </div>
+          <button v-if="dataSearch" @click="dataSearch = ''" class="btn-icon text-gray-400" title="مسح البحث">
+            <i class="fas fa-times text-xs"></i>
+          </button>
         </div>
       </div>
       <div class="flex gap-1 bg-gray-100 dark:bg-gray-800 rounded-xl p-1 mb-4 overflow-x-auto">
@@ -471,7 +572,10 @@
                 <td class="text-center text-gray-500 text-xs">{{ lectures.filter(l => l.professorId === p.id).reduce((s, l) => s + l.duration, 0) }}س</td>
                 <td><div class="flex gap-1 justify-end"><button @click="openEntityModal('professor', p)" class="btn-icon text-blue-500"><i class="fas fa-pen text-xs"></i></button><button @click="deleteEntity('professor', p)" class="btn-icon text-red-400"><i class="fas fa-trash text-xs"></i></button></div></td>
               </tr>
-              <tr v-if="filteredProfessors.length === 0"><td colspan="5" class="text-center text-gray-400 py-8">لا توجد نتائج</td></tr>
+              <tr v-if="filteredProfessors.length === 0"><td colspan="5" class="text-center text-gray-400 py-8">
+                <i class="fas fa-search text-2xl text-gray-300 mb-2 block"></i>
+                {{ dataSearch ? `لا توجد نتائج للبحث عن "${dataSearch}"` : 'لا يوجد محاضرون' }}
+              </td></tr>
             </tbody>
           </table>
         </div>
@@ -597,19 +701,24 @@
       <div class="card p-3 mb-4 no-print" v-if="reportType === 'group' || reportType === 'professor' || reportType === 'location'">
         <div v-if="reportType === 'group'" class="flex flex-wrap gap-2">
           <select v-model="rp.year" class="form-input flex-1 min-w-[140px] text-sm py-1.5">
+            <option value="">-- الفرقة --</option>
             <option v-for="y in uniqueYears" :key="y" :value="y">{{ y }}</option>
           </select>
           <select v-model="rp.major" class="form-input flex-1 min-w-[180px] text-sm py-1.5">
+            <option value="">-- التخصص --</option>
             <option v-for="m in rpUniqueMajors" :key="m" :value="m">{{ m }}</option>
           </select>
           <select v-model="rp.section" class="form-input flex-1 min-w-[130px] text-sm py-1.5">
+            <option value="">-- المجموعة --</option>
             <option v-for="s in rpUniqueSections" :key="s" :value="s">{{ s }}</option>
           </select>
         </div>
         <select v-else-if="reportType === 'professor'" v-model="rp.professor" class="form-input w-full max-w-sm text-sm py-1.5">
+          <option value="">-- اختر المحاضر --</option>
           <option v-for="p in professors" :key="p.id" :value="p.id">{{ p.name }}</option>
         </select>
         <select v-else-if="reportType === 'location'" v-model="rp.location" class="form-input w-full max-w-sm text-sm py-1.5">
+          <option value="">-- اختر المكان --</option>
           <option v-for="l in locations" :key="l.id" :value="l.id">{{ l.name }}</option>
         </select>
       </div>
@@ -858,11 +967,14 @@
         </div>
       </div>
       <div class="flex gap-3 mt-5">
-        <button @click="lectureModal.show = false" class="btn-outline flex-1 py-2.5 text-sm justify-center">إلغاء</button>
+        <button @click="lectureModal.show = false" class="btn-outline flex-1 py-2.5 text-sm justify-center">
+          <i class="fas fa-times text-xs opacity-60"></i>إلغاء
+        </button>
         <button @click="saveLecture" class="btn-primary flex-1 py-2.5 text-sm justify-center">
           <i class="fas fa-check"></i>{{ lectureModal.id ? 'حفظ التعديل' : 'إضافة' }}
         </button>
       </div>
+      <p class="text-center text-[11px] text-gray-400 mt-2">اضغط Esc للإغلاق</p>
     </div>
   </div>
 
