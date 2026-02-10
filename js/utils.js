@@ -5,9 +5,16 @@ function genId() {
   return Date.now().toString(36) + Math.random().toString(36).substr(2, 9);
 }
 
+// Format a single hour as a readable time string (e.g. 8 → "8:00 ص", 13 → "1:00 م")
 function formatSlot(h) {
-  const fh = n => n <= 12 ? String(n) : String(n - 12);
-  return fh(h + 1) + ':' + fh(h);
+  if (h < 12) return h + ':00 ص';
+  if (h === 12) return '12:00 م';
+  return (h - 12) + ':00 م';
+}
+
+// Format a time range for a lecture (e.g. 8, duration 2 → "8:00 ص – 10:00 ص")
+function formatSlotRange(h, duration) {
+  return formatSlot(h) + ' – ' + formatSlot(h + (duration || 1));
 }
 
 function overlaps(a, b) {
@@ -22,6 +29,7 @@ function detectConflicts(lectures) {
       const a = lectures[i], b = lectures[j];
       if (!overlaps(a, b)) continue;
       const types = [];
+      // l1 is "online" — skip location conflicts for it
       if (a.locationId === b.locationId && a.locationId !== 'l1') types.push('مكان');
       if (a.professorId === b.professorId) types.push('محاضر');
       if (a.groupId === b.groupId) types.push('فرقة');
@@ -32,6 +40,10 @@ function detectConflicts(lectures) {
 }
 
 function loadStorage(key, fallback) {
-  try { const v = localStorage.getItem(key); return v ? JSON.parse(v) : fallback; }
-  catch { return fallback; }
+  try {
+    const v = localStorage.getItem(key);
+    return v ? JSON.parse(v) : fallback;
+  } catch {
+    return fallback;
+  }
 }
