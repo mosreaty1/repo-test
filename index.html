@@ -1,69 +1,931 @@
 <!DOCTYPE html>
 <html lang="ar" dir="rtl">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>منظم الجداول الدراسية</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <script>
-      tailwind.config = {
-        darkMode: 'class',
-        theme: {
-          extend: {
-            fontFamily: {
-              sans: ['Cairo', 'sans-serif'],
-            },
-          },
-        },
-      }
-    </script>
-    <link
-      rel="stylesheet"
-      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css"
-      crossorigin="anonymous"
-      referrerpolicy="no-referrer"
-    />
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
-    <link rel="preconnect" href="https://fonts.googleapis.com" />
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link
-      href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700&display=swap"
-      rel="stylesheet"
-    />
-    <style>
-      * { box-sizing: border-box; }
-      ::-webkit-scrollbar { width: 6px; height: 6px; }
-      ::-webkit-scrollbar-track { background: #f1f1f1; }
-      ::-webkit-scrollbar-thumb { background: #888; border-radius: 3px; }
-      ::-webkit-scrollbar-thumb:hover { background: #555; }
-      .dark ::-webkit-scrollbar-track { background: #374151; }
-      .dark ::-webkit-scrollbar-thumb { background: #6b7280; }
-      @media print {
-        @page { size: A3 landscape; margin: 1cm; }
-        body { background: white !important; }
-        .no-print { display: none !important; }
-        body * { visibility: hidden; }
-        .printable-area, .printable-area * { visibility: visible; }
-        .printable-area {
-          position: absolute; left: 0; top: 0; width: 100%;
-        }
-        .printable-area .overflow-x-auto { overflow-x: visible !important; }
-        .printable-area table { width: 100% !important; font-size: 9pt; table-layout: fixed; }
-        .printable-area td, .printable-area th { padding: 4px !important; word-wrap: break-word; }
-      }
-    </style>
-    <script>
-      if (
-        localStorage.getItem('tm_theme') === 'dark' ||
-        (!('tm_theme' in localStorage) &&
-          window.matchMedia('(prefers-color-scheme: dark)').matches)
-      ) {
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>منظم الجداول الدراسية</title>
+  <script>
+    // Prevent dark mode flash
+    (function() {
+      if (localStorage.getItem('tm_theme') === 'dark') {
         document.documentElement.classList.add('dark');
       }
-    </script>
-  </head>
-  <body class="font-sans bg-gray-100 dark:bg-gray-900 text-gray-900 dark:text-gray-100 min-h-screen">
-    <div id="root"></div>
-    <script type="module" src="/src/main.jsx"></script>
-  </body>
+    })();
+  </script>
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          fontFamily: { cairo: ['Cairo', 'sans-serif'] }
+        }
+      }
+    }
+  </script>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" />
+  <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="css/style.css" />
+</head>
+<body class="font-cairo bg-gray-50 dark:bg-gray-900 text-gray-800 dark:text-gray-100 min-h-screen">
+
+<div id="app" v-cloak>
+
+  <!-- NAVBAR -->
+  <nav class="sticky top-0 z-50 bg-white dark:bg-gray-800 shadow-sm border-b border-gray-200 dark:border-gray-700">
+    <div class="max-w-screen-xl mx-auto px-4 flex items-center justify-between h-14">
+      <div class="flex items-center gap-3">
+        <div class="w-8 h-8 bg-purple-600 rounded-lg flex items-center justify-center">
+          <i class="fas fa-calendar-alt text-white text-sm"></i>
+        </div>
+        <span class="font-bold text-gray-800 dark:text-white hidden sm:block">منظم الجداول الدراسية</span>
+      </div>
+      <div class="flex items-center gap-1">
+        <button v-for="item in navItems" :key="item.id"
+          @click="currentPage = item.id"
+          :class="['px-3 py-1.5 rounded-lg text-sm font-medium transition-colors', currentPage===item.id ? 'bg-purple-100 dark:bg-purple-900/40 text-purple-700 dark:text-purple-300' : 'text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700']">
+          {{ item.label }}
+        </button>
+      </div>
+      <div class="flex items-center gap-2">
+        <span v-if="conflictsCount > 0" class="badge-red text-xs px-2 py-0.5 rounded-full cursor-pointer" @click="showConflictModal=true">
+          <i class="fas fa-exclamation-triangle ml-1"></i>{{ conflictsCount }} تعارض
+        </span>
+        <button @click="toggleDark" class="w-8 h-8 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 flex items-center justify-center">
+          <i :class="['fas text-gray-600 dark:text-gray-400', darkMode ? 'fa-sun' : 'fa-moon']"></i>
+        </button>
+      </div>
+    </div>
+  </nav>
+
+  <div class="max-w-screen-xl mx-auto px-4 py-6">
+
+    <!-- ==================== DASHBOARD ==================== -->
+    <div v-if="currentPage === 'dashboard'">
+      <div class="flex items-center justify-between mb-6">
+        <h1 class="text-xl font-bold text-gray-800 dark:text-white">لوحة المعلومات</h1>
+        <button @click="showResetModal=true" class="btn-outline text-xs px-3 py-1.5">
+          <i class="fas fa-rotate-left ml-1"></i>إعادة تعيين البيانات
+        </button>
+      </div>
+
+      <!-- Stats Cards -->
+      <div class="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-6">
+        <div class="card p-4 flex items-center gap-3">
+          <div class="w-10 h-10 bg-purple-100 dark:bg-purple-900/30 rounded-xl flex items-center justify-center">
+            <i class="fas fa-calendar-check text-purple-600 dark:text-purple-400"></i>
+          </div>
+          <div>
+            <div class="text-2xl font-bold text-gray-800 dark:text-white">{{ lectures.length }}</div>
+            <div class="text-xs text-gray-500">محاضرة</div>
+          </div>
+        </div>
+        <div class="card p-4 flex items-center gap-3">
+          <div class="w-10 h-10 bg-blue-100 dark:bg-blue-900/30 rounded-xl flex items-center justify-center">
+            <i class="fas fa-building text-blue-600 dark:text-blue-400"></i>
+          </div>
+          <div>
+            <div class="text-2xl font-bold text-gray-800 dark:text-white">{{ locations.length }}</div>
+            <div class="text-xs text-gray-500">مكان</div>
+          </div>
+        </div>
+        <div class="card p-4 flex items-center gap-3">
+          <div class="w-10 h-10 bg-green-100 dark:bg-green-900/30 rounded-xl flex items-center justify-center">
+            <i class="fas fa-user-tie text-green-600 dark:text-green-400"></i>
+          </div>
+          <div>
+            <div class="text-2xl font-bold text-gray-800 dark:text-white">{{ professors.length }}</div>
+            <div class="text-xs text-gray-500">محاضر</div>
+          </div>
+        </div>
+        <div class="card p-4 flex items-center gap-3">
+          <div class="w-10 h-10 bg-yellow-100 dark:bg-yellow-900/30 rounded-xl flex items-center justify-center">
+            <i class="fas fa-users text-yellow-600 dark:text-yellow-400"></i>
+          </div>
+          <div>
+            <div class="text-2xl font-bold text-gray-800 dark:text-white">{{ groups.length }}</div>
+            <div class="text-xs text-gray-500">فرقة</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+
+        <!-- Professor Workload -->
+        <div class="card p-4">
+          <div class="flex items-center justify-between mb-3 cursor-pointer" @click="toggleSection('general')">
+            <h3 class="font-semibold text-gray-800 dark:text-white flex items-center gap-2">
+              <i class="fas fa-user-tie text-blue-500"></i> أعباء المحاضرين
+            </h3>
+            <i :class="['fas fa-chevron-down text-gray-400 transition-transform', openSections.general ? 'rotate-180' : '']"></i>
+          </div>
+          <div v-show="openSections.general">
+            <input v-model="profSearch" type="text" placeholder="بحث عن محاضر..." class="form-input mb-3" />
+            <div class="space-y-2 max-h-72 overflow-y-auto">
+              <div v-for="p in filteredWorkload" :key="p.id" class="flex items-center gap-2">
+                <div class="w-24 text-xs text-gray-600 dark:text-gray-400 truncate text-right">{{ p.name }}</div>
+                <div class="flex-1 bg-gray-100 dark:bg-gray-700 rounded-full h-2">
+                  <div class="h-2 rounded-full bg-blue-500" :style="{width: Math.min(100, p.hours/20*100)+'%'}"></div>
+                </div>
+                <div class="w-10 text-xs text-gray-700 dark:text-gray-300 text-left">{{ p.hours }}س</div>
+              </div>
+              <div v-if="filteredWorkload.length === 0" class="text-center text-gray-400 py-4 text-sm">لا توجد نتائج</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Location Usage -->
+        <div class="card p-4">
+          <div class="flex items-center justify-between mb-3 cursor-pointer" @click="toggleSection('general')">
+            <h3 class="font-semibold text-gray-800 dark:text-white flex items-center gap-2">
+              <i class="fas fa-building text-purple-500"></i> استخدام الأماكن
+            </h3>
+          </div>
+          <input v-model="locSearch" type="text" placeholder="بحث عن مكان..." class="form-input mb-3" />
+          <div class="space-y-2 max-h-72 overflow-y-auto">
+            <div v-for="l in filteredLocUsage" :key="l.id" class="flex items-center gap-2">
+              <div class="w-28 text-xs text-gray-600 dark:text-gray-400 truncate text-right">{{ l.name }}</div>
+              <div class="flex-1 bg-gray-100 dark:bg-gray-700 rounded-full h-2">
+                <div class="h-2 rounded-full bg-purple-500" :style="{width: Math.min(100, l.pct)+'%'}"></div>
+              </div>
+              <div class="w-10 text-xs text-gray-700 dark:text-gray-300 text-left">{{ l.hours }}س</div>
+            </div>
+            <div v-if="filteredLocUsage.length === 0" class="text-center text-gray-400 py-4 text-sm">لا توجد نتائج</div>
+          </div>
+        </div>
+
+        <!-- Quality Indicators -->
+        <div class="card p-4">
+          <div class="flex items-center justify-between mb-3 cursor-pointer" @click="toggleSection('quality')">
+            <h3 class="font-semibold text-gray-800 dark:text-white flex items-center gap-2">
+              <i class="fas fa-star text-yellow-500"></i> مؤشرات الجودة - المحاضرون
+            </h3>
+            <i :class="['fas fa-chevron-down text-gray-400 transition-transform', openSections.quality ? 'rotate-180' : '']"></i>
+          </div>
+          <div v-show="openSections.quality" class="overflow-x-auto">
+            <table class="data-table w-full text-sm">
+              <thead>
+                <tr>
+                  <th>المحاضر</th>
+                  <th>ساعات فراغ</th>
+                  <th>أيام طويلة</th>
+                  <th>التقييم</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr v-for="p in qualityIndicators.slice(0,10)" :key="p.id" class="data-row">
+                  <td class="font-medium text-gray-700 dark:text-gray-300">{{ p.name }}</td>
+                  <td>
+                    <span :class="['badge', p.gapHours === 0 ? 'badge-green' : p.gapHours <= 2 ? 'badge-yellow' : 'badge-red']">
+                      {{ p.gapHours }}س
+                    </span>
+                  </td>
+                  <td>
+                    <span :class="['badge', p.longDays === 0 ? 'badge-green' : p.longDays === 1 ? 'badge-yellow' : 'badge-red']">
+                      {{ p.longDays }} يوم
+                    </span>
+                  </td>
+                  <td>
+                    <span :class="['badge', p.gapHours===0&&p.longDays===0 ? 'badge-green' : p.gapHours<=2 ? 'badge-yellow' : 'badge-red']">
+                      {{ p.gapHours===0&&p.longDays===0 ? 'ممتاز' : p.gapHours<=2 ? 'جيد' : 'يحتاج مراجعة' }}
+                    </span>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- Group Gaps -->
+        <div class="card p-4">
+          <div class="flex items-center justify-between mb-3 cursor-pointer" @click="toggleSection('gaps')">
+            <h3 class="font-semibold text-gray-800 dark:text-white flex items-center gap-2">
+              <i class="fas fa-clock text-orange-500"></i> تحليل الفجوات الزمنية - الفرق
+            </h3>
+            <i :class="['fas fa-chevron-down text-gray-400 transition-transform', openSections.gaps ? 'rotate-180' : '']"></i>
+          </div>
+          <div v-show="openSections.gaps" class="overflow-x-auto">
+            <table class="data-table w-full text-sm">
+              <thead>
+                <tr>
+                  <th>الفرقة</th>
+                  <th>التخصص</th>
+                  <th>متوسط الفراغ</th>
+                  <th>التقييم</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr v-for="g in groupGaps.slice(0,10)" :key="g.id" class="data-row">
+                  <td class="font-medium text-gray-700 dark:text-gray-300">{{ g.year }}</td>
+                  <td class="text-gray-500 dark:text-gray-400 text-xs">{{ g.section }}</td>
+                  <td>
+                    <span :class="['badge', g.avgGap <= 0.5 ? 'badge-green' : g.avgGap <= 1.5 ? 'badge-yellow' : 'badge-red']">
+                      {{ g.avgGap }}س
+                    </span>
+                  </td>
+                  <td>
+                    <span :class="['badge', g.avgGap <= 0.5 ? 'badge-green' : g.avgGap <= 1.5 ? 'badge-yellow' : 'badge-red']">
+                      {{ g.avgGap <= 0.5 ? 'ممتاز' : g.avgGap <= 1.5 ? 'جيد' : 'مرتفع' }}
+                    </span>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- Heatmap -->
+        <div class="card p-4 lg:col-span-2">
+          <div class="flex items-center justify-between mb-3 cursor-pointer" @click="toggleSection('heatmap')">
+            <h3 class="font-semibold text-gray-800 dark:text-white flex items-center gap-2">
+              <i class="fas fa-fire text-red-500"></i> خريطة الاستخدام الحراري
+            </h3>
+            <i :class="['fas fa-chevron-down text-gray-400 transition-transform', openSections.heatmap ? 'rotate-180' : '']"></i>
+          </div>
+          <div v-show="openSections.heatmap">
+            <select v-model="heatmapLocId" class="form-input mb-3 w-auto">
+              <option v-for="l in locations" :key="l.id" :value="l.id">{{ l.name }}</option>
+            </select>
+            <div class="overflow-x-auto">
+              <table class="w-full text-xs border-collapse">
+                <thead>
+                  <tr>
+                    <th class="p-2 text-gray-500 dark:text-gray-400 font-medium">الوقت / اليوم</th>
+                    <th v-for="d in DAYS" :key="d" class="p-2 text-gray-600 dark:text-gray-300 font-medium">{{ d }}</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr v-for="h in HOURS" :key="h">
+                    <td class="p-2 text-gray-500 dark:text-gray-400 font-medium whitespace-nowrap">{{ formatSlot(h) }}</td>
+                    <td v-for="d in DAYS" :key="d" class="p-1">
+                      <div :class="['text-center rounded p-1.5 text-xs font-bold min-w-[2rem]', heatmapGrid[d] && heatmapGrid[d][h] > 0 ? heatColor(heatmapGrid[d][h]) : 'bg-gray-100 dark:bg-gray-700 text-gray-400']">
+                        {{ heatmapGrid[d] && heatmapGrid[d][h] > 0 ? heatmapGrid[d][h] : '-' }}
+                      </div>
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </div><!-- end dashboard -->
+
+    <!-- ==================== SCHEDULE VIEW ==================== -->
+    <div v-if="currentPage === 'schedule'">
+      <div class="flex items-center justify-between mb-4">
+        <h1 class="text-xl font-bold text-gray-800 dark:text-white">عرض الجداول</h1>
+        <div class="flex items-center gap-2">
+          <button v-if="undoStack.length > 0" @click="undo" class="btn-outline text-xs px-3 py-1.5">
+            <i class="fas fa-rotate-left ml-1"></i>تراجع
+          </button>
+          <button @click="openAddLecture(null, null)" class="btn-primary text-xs px-3 py-1.5">
+            <i class="fas fa-plus ml-1"></i>إضافة محاضرة
+          </button>
+          <button @click="showAssistant = !showAssistant" class="btn-outline text-xs px-3 py-1.5">
+            <i class="fas fa-robot ml-1"></i>المساعد
+          </button>
+        </div>
+      </div>
+
+      <!-- Tab Bar -->
+      <div class="flex gap-1 bg-gray-100 dark:bg-gray-800 rounded-xl p-1 mb-4 w-fit">
+        <button v-for="t in scheduleTabs" :key="t.id" @click="schedTab = t.id"
+          :class="['px-4 py-2 rounded-lg text-sm font-medium transition-colors', schedTab===t.id ? 'bg-white dark:bg-gray-700 text-gray-800 dark:text-white shadow-sm' : 'text-gray-500 dark:text-gray-400 hover:text-gray-700']">
+          {{ t.label }}
+        </button>
+      </div>
+
+      <!-- Filters -->
+      <div class="card p-3 mb-4">
+        <div v-if="schedTab === 'class'" class="flex flex-wrap gap-3">
+          <select v-model="sv.year" class="form-input flex-1 min-w-32">
+            <option value="">{{ uniqueYears[0] || 'الفرقة' }}</option>
+            <option v-for="y in uniqueYears" :key="y" :value="y">{{ y }}</option>
+          </select>
+          <select v-model="sv.major" class="form-input flex-1 min-w-32">
+            <option value="">{{ uniqueMajors[0] || 'التخصص' }}</option>
+            <option v-for="m in uniqueMajors" :key="m" :value="m">{{ m }}</option>
+          </select>
+          <select v-model="sv.section" class="form-input flex-1 min-w-28">
+            <option value="">{{ uniqueSections[0] || 'المجموعة' }}</option>
+            <option v-for="s in uniqueSections" :key="s" :value="s">{{ s }}</option>
+          </select>
+        </div>
+        <div v-else-if="schedTab === 'professor'">
+          <select v-model="sv.professor" class="form-input w-full max-w-xs">
+            <option v-for="p in professors" :key="p.id" :value="p.id">{{ p.name }}</option>
+          </select>
+        </div>
+        <div v-else-if="schedTab === 'location'">
+          <select v-model="sv.location" class="form-input w-full max-w-xs">
+            <option v-for="l in locations" :key="l.id" :value="l.id">{{ l.name }}</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="flex gap-4">
+        <!-- Schedule Grid -->
+        <div class="flex-1 min-w-0">
+          <div class="card p-3 mb-2">
+            <div class="text-sm font-semibold text-gray-700 dark:text-gray-300">{{ scheduleTitle }}</div>
+          </div>
+          <div class="overflow-x-auto">
+            <table class="w-full text-xs border-collapse min-w-[640px]">
+              <thead>
+                <tr class="bg-gray-50 dark:bg-gray-800">
+                  <th class="p-2 text-gray-500 dark:text-gray-400 font-medium border dark:border-gray-700 w-16">الوقت</th>
+                  <th v-for="d in DAYS" :key="d" class="p-2 text-gray-600 dark:text-gray-300 font-medium border dark:border-gray-700">{{ d }}</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr v-for="h in HOURS" :key="h">
+                  <td class="p-2 text-gray-500 dark:text-gray-400 font-medium border dark:border-gray-700 bg-gray-50 dark:bg-gray-800 text-center whitespace-nowrap">
+                    {{ formatSlot(h) }}
+                  </td>
+                  <td v-for="d in DAYS" :key="d"
+                    class="border dark:border-gray-700 p-1 align-top min-w-[100px] cursor-pointer hover:bg-purple-50 dark:hover:bg-purple-900/10"
+                    @click.self="openAddLecture(d, h)">
+                    <div v-for="lec in getCellLectures(d, h)" :key="lec.id"
+                      :class="['rounded border-r-4 p-1.5 mb-1 cursor-pointer', lecColor(lec), isConflict(lec.id) ? 'ring-2 ring-red-400' : '']"
+                      @click.stop="openEditLecture(lec)">
+                      <div class="font-bold text-gray-700 dark:text-gray-200 text-xs leading-tight">{{ getSubject(lec.subjectId)?.name || '؟' }}</div>
+                      <div class="text-gray-500 dark:text-gray-400 leading-tight mt-0.5">{{ getProfessor(lec.professorId)?.name || '؟' }}</div>
+                      <div class="text-gray-400 dark:text-gray-500 leading-tight">{{ getLocation(lec.locationId)?.name || '؟' }}</div>
+                      <div class="flex items-center justify-between mt-0.5">
+                        <span class="badge-blue text-xs px-1 rounded">{{ lec.type }}</span>
+                        <button @click.stop="confirmDeleteLecture(lec)" class="text-red-400 hover:text-red-600 text-xs"><i class="fas fa-trash-alt"></i></button>
+                      </div>
+                    </div>
+                    <div v-if="getCellLectures(d, h).length === 0"
+                      class="text-center text-gray-200 dark:text-gray-700 text-lg py-1 hover:text-purple-300 transition-colors"
+                      @click="openAddLecture(d, h)">+</div>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- Schedule Assistant -->
+        <div v-if="showAssistant" class="w-64 shrink-0">
+          <div class="card p-3">
+            <h3 class="font-semibold text-gray-700 dark:text-gray-300 mb-3 flex items-center gap-2 text-sm">
+              <i class="fas fa-robot text-purple-500"></i>مساعد الجدول
+            </h3>
+            <div v-if="schedTab === 'class' && currentGroup">
+              <div class="text-xs text-gray-500 dark:text-gray-400 mb-2 font-medium">المواد غير المجدولة:</div>
+              <div class="space-y-1.5">
+                <div v-for="s in subjects" :key="s.id"
+                  :class="['flex items-center justify-between px-2 py-1.5 rounded-lg text-xs transition-colors', isSubjectScheduled(s.id) ? 'bg-green-50 dark:bg-green-900/20' : 'bg-red-50 dark:bg-red-900/20 cursor-pointer hover:bg-red-100 dark:hover:bg-red-900/30']"
+                  @click="!isSubjectScheduled(s.id) && openAddWithSubject(s.id)">
+                  <span :class="isSubjectScheduled(s.id) ? 'text-green-700 dark:text-green-400' : 'text-red-700 dark:text-red-400'">{{ s.name }}</span>
+                  <i :class="['fas', isSubjectScheduled(s.id) ? 'fa-check text-green-500' : 'fa-plus text-red-500']"></i>
+                </div>
+              </div>
+            </div>
+            <div v-else class="text-xs text-gray-400 dark:text-gray-500 text-center py-4">
+              اختر فرقة دراسية لعرض المساعد
+            </div>
+          </div>
+        </div>
+      </div>
+    </div><!-- end schedule -->
+
+    <!-- ==================== DATA MANAGEMENT ==================== -->
+    <div v-if="currentPage === 'data'">
+      <div class="flex items-center justify-between mb-4">
+        <h1 class="text-xl font-bold text-gray-800 dark:text-white">إدارة البيانات</h1>
+        <input v-model="dataSearch" type="text" placeholder="بحث..." class="form-input w-48" />
+      </div>
+
+      <!-- Data Tabs -->
+      <div class="flex gap-1 bg-gray-100 dark:bg-gray-800 rounded-xl p-1 mb-4 overflow-x-auto">
+        <button v-for="t in dataTabs" :key="t.id" @click="dataTab = t.id"
+          :class="['px-3 py-2 rounded-lg text-sm font-medium whitespace-nowrap transition-colors flex items-center gap-1.5', dataTab===t.id ? 'bg-white dark:bg-gray-700 text-gray-800 dark:text-white shadow-sm' : 'text-gray-500 dark:text-gray-400']">
+          <i :class="['fas text-xs', t.icon]"></i>{{ t.label }}
+        </button>
+      </div>
+
+      <!-- Professors -->
+      <div v-if="dataTab === 'professors'" class="card p-4">
+        <div class="flex justify-between items-center mb-3">
+          <span class="text-sm text-gray-500">{{ filteredProfessors.length }} محاضر</span>
+          <button @click="openEntityModal('professor', null)" class="btn-primary text-xs px-3 py-1.5">
+            <i class="fas fa-plus ml-1"></i>إضافة محاضر
+          </button>
+        </div>
+        <div class="overflow-x-auto">
+          <table class="data-table w-full">
+            <thead><tr><th>#</th><th>الاسم</th><th>المحاضرات</th><th>إجراءات</th></tr></thead>
+            <tbody>
+              <tr v-for="(p, i) in filteredProfessors" :key="p.id" class="data-row">
+                <td class="text-gray-400 text-xs">{{ i+1 }}</td>
+                <td class="font-medium text-gray-700 dark:text-gray-300">{{ p.name }}</td>
+                <td>
+                  <span class="badge-blue">{{ lectures.filter(l=>l.professorId===p.id).length }}</span>
+                </td>
+                <td>
+                  <div class="flex gap-1">
+                    <button @click="openEntityModal('professor', p)" class="btn-icon text-blue-500"><i class="fas fa-pen"></i></button>
+                    <button @click="deleteEntity('professor', p)" class="btn-icon text-red-500"><i class="fas fa-trash"></i></button>
+                  </div>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Locations -->
+      <div v-if="dataTab === 'locations'" class="card p-4">
+        <div class="flex justify-between items-center mb-3">
+          <span class="text-sm text-gray-500">{{ filteredLocations.length }} مكان</span>
+          <button @click="openEntityModal('location', null)" class="btn-primary text-xs px-3 py-1.5">
+            <i class="fas fa-plus ml-1"></i>إضافة مكان
+          </button>
+        </div>
+        <div class="overflow-x-auto">
+          <table class="data-table w-full">
+            <thead><tr><th>الاسم</th><th>السعة</th><th>النوع</th><th>إجراءات</th></tr></thead>
+            <tbody>
+              <tr v-for="l in filteredLocations" :key="l.id" class="data-row">
+                <td class="font-medium text-gray-700 dark:text-gray-300">{{ l.name }}</td>
+                <td>{{ l.capacity }}</td>
+                <td><span class="badge-blue">{{ locTypeLabel(l.type) }}</span></td>
+                <td>
+                  <div class="flex gap-1">
+                    <button @click="openEntityModal('location', l)" class="btn-icon text-blue-500"><i class="fas fa-pen"></i></button>
+                    <button @click="deleteEntity('location', l)" class="btn-icon text-red-500"><i class="fas fa-trash"></i></button>
+                  </div>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Subjects -->
+      <div v-if="dataTab === 'subjects'" class="card p-4">
+        <div class="flex justify-between items-center mb-3">
+          <span class="text-sm text-gray-500">{{ filteredSubjects.length }} مادة</span>
+          <button @click="openEntityModal('subject', null)" class="btn-primary text-xs px-3 py-1.5">
+            <i class="fas fa-plus ml-1"></i>إضافة مادة
+          </button>
+        </div>
+        <div class="overflow-x-auto">
+          <table class="data-table w-full">
+            <thead><tr><th>الاسم</th><th>الكود</th><th>المحاضرات</th><th>إجراءات</th></tr></thead>
+            <tbody>
+              <tr v-for="s in filteredSubjects" :key="s.id" class="data-row">
+                <td class="font-medium text-gray-700 dark:text-gray-300">{{ s.name }}</td>
+                <td class="text-gray-500 text-xs">{{ s.code }}</td>
+                <td><span class="badge-blue">{{ lectures.filter(l=>l.subjectId===s.id).length }}</span></td>
+                <td>
+                  <div class="flex gap-1">
+                    <button @click="openEntityModal('subject', s)" class="btn-icon text-blue-500"><i class="fas fa-pen"></i></button>
+                    <button @click="deleteEntity('subject', s)" class="btn-icon text-red-500"><i class="fas fa-trash"></i></button>
+                  </div>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Groups -->
+      <div v-if="dataTab === 'groups'" class="card p-4">
+        <div class="flex justify-between items-center mb-3">
+          <span class="text-sm text-gray-500">{{ filteredGroups.length }} فرقة</span>
+          <button @click="openEntityModal('group', null)" class="btn-primary text-xs px-3 py-1.5">
+            <i class="fas fa-plus ml-1"></i>إضافة فرقة
+          </button>
+        </div>
+        <div class="overflow-x-auto">
+          <table class="data-table w-full">
+            <thead><tr><th>الفرقة</th><th>التخصص</th><th>المجموعة</th><th>المحاضرات</th><th>إجراءات</th></tr></thead>
+            <tbody>
+              <tr v-for="g in filteredGroups" :key="g.id" class="data-row">
+                <td class="font-medium text-gray-700 dark:text-gray-300">{{ g.year }}</td>
+                <td class="text-gray-500 text-xs">{{ g.major }}</td>
+                <td class="text-gray-500 text-xs">{{ g.section }}</td>
+                <td><span class="badge-blue">{{ lectures.filter(l=>l.groupId===g.id).length }}</span></td>
+                <td>
+                  <div class="flex gap-1">
+                    <button @click="openEntityModal('group', g)" class="btn-icon text-blue-500"><i class="fas fa-pen"></i></button>
+                    <button @click="deleteEntity('group', g)" class="btn-icon text-red-500"><i class="fas fa-trash"></i></button>
+                  </div>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Lectures -->
+      <div v-if="dataTab === 'lectures'" class="card p-4">
+        <div class="flex justify-between items-center mb-3">
+          <span class="text-sm text-gray-500">{{ filteredLectures.length }} محاضرة</span>
+          <button @click="openAddLecture(null, null)" class="btn-primary text-xs px-3 py-1.5">
+            <i class="fas fa-plus ml-1"></i>إضافة محاضرة
+          </button>
+        </div>
+        <div class="overflow-x-auto">
+          <table class="data-table w-full">
+            <thead><tr><th>المادة</th><th>المحاضر</th><th>المكان</th><th>الفرقة</th><th>اليوم</th><th>الوقت</th><th>النوع</th><th>إجراءات</th></tr></thead>
+            <tbody>
+              <tr v-for="lec in filteredLectures" :key="lec.id" :class="['data-row', isConflict(lec.id) ? 'bg-red-50 dark:bg-red-900/10' : '']">
+                <td class="font-medium text-gray-700 dark:text-gray-300 text-xs">{{ getSubject(lec.subjectId)?.name || '؟' }}</td>
+                <td class="text-xs text-gray-500">{{ getProfessor(lec.professorId)?.name || '؟' }}</td>
+                <td class="text-xs text-gray-500">{{ getLocation(lec.locationId)?.name || '؟' }}</td>
+                <td class="text-xs text-gray-500">{{ getGroup(lec.groupId)?.section || '؟' }}</td>
+                <td class="text-xs">{{ lec.day }}</td>
+                <td class="text-xs">{{ formatSlot(lec.startHour) }}</td>
+                <td><span class="badge-blue text-xs">{{ lec.type }}</span></td>
+                <td>
+                  <div class="flex gap-1">
+                    <button @click="openEditLecture(lec)" class="btn-icon text-blue-500"><i class="fas fa-pen"></i></button>
+                    <button @click="confirmDeleteLecture(lec)" class="btn-icon text-red-500"><i class="fas fa-trash"></i></button>
+                  </div>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div><!-- end data management -->
+
+    <!-- ==================== REPORTS ==================== -->
+    <div v-if="currentPage === 'reports'">
+      <div class="flex items-center justify-between mb-4">
+        <h1 class="text-xl font-bold text-gray-800 dark:text-white">التقارير</h1>
+        <button @click="exportCSV" class="btn-primary text-xs px-3 py-1.5">
+          <i class="fas fa-download ml-1"></i>تصدير CSV
+        </button>
+      </div>
+
+      <!-- Report Type Tabs -->
+      <div class="flex gap-1 bg-gray-100 dark:bg-gray-800 rounded-xl p-1 mb-4 overflow-x-auto">
+        <button v-for="t in reportTypes" :key="t.id" @click="reportType = t.id"
+          :class="['px-3 py-2 rounded-lg text-sm font-medium whitespace-nowrap transition-colors', reportType===t.id ? 'bg-white dark:bg-gray-700 text-gray-800 dark:text-white shadow-sm' : 'text-gray-500 dark:text-gray-400']">
+          {{ t.label }}
+        </button>
+      </div>
+
+      <!-- Report Filters -->
+      <div class="card p-3 mb-4">
+        <div v-if="reportType === 'group'" class="flex flex-wrap gap-3">
+          <select v-model="rp.year" class="form-input flex-1 min-w-28">
+            <option v-for="y in uniqueYears" :key="y" :value="y">{{ y }}</option>
+          </select>
+          <select v-model="rp.major" class="form-input flex-1 min-w-28">
+            <option v-for="m in rpUniqueMajors" :key="m" :value="m">{{ m }}</option>
+          </select>
+          <select v-model="rp.section" class="form-input flex-1 min-w-24">
+            <option v-for="s in rpUniqueSections" :key="s" :value="s">{{ s }}</option>
+          </select>
+        </div>
+        <div v-else-if="reportType === 'professor'">
+          <select v-model="rp.professor" class="form-input w-full max-w-xs">
+            <option v-for="p in professors" :key="p.id" :value="p.id">{{ p.name }}</option>
+          </select>
+        </div>
+        <div v-else-if="reportType === 'location'">
+          <select v-model="rp.location" class="form-input w-full max-w-xs">
+            <option v-for="l in locations" :key="l.id" :value="l.id">{{ l.name }}</option>
+          </select>
+        </div>
+      </div>
+
+      <!-- Report Grid -->
+      <div v-if="reportType === 'group' || reportType === 'professor' || reportType === 'location'" class="card p-3">
+        <div class="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-3">{{ reportTitle }}</div>
+        <div class="overflow-x-auto">
+          <table class="w-full text-xs border-collapse min-w-[640px]">
+            <thead>
+              <tr class="bg-gray-50 dark:bg-gray-800">
+                <th class="p-2 text-gray-500 dark:text-gray-400 font-medium border dark:border-gray-700 w-16">الوقت</th>
+                <th v-for="d in DAYS" :key="d" class="p-2 text-gray-600 dark:text-gray-300 font-medium border dark:border-gray-700">{{ d }}</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr v-for="h in HOURS" :key="h">
+                <td class="p-2 text-gray-500 dark:text-gray-400 font-medium border dark:border-gray-700 bg-gray-50 dark:bg-gray-800 text-center whitespace-nowrap">{{ formatSlot(h) }}</td>
+                <td v-for="d in DAYS" :key="d" class="border dark:border-gray-700 p-1 align-top">
+                  <div v-for="lec in getReportCellLectures(d, h)" :key="lec.id" :class="['rounded border-r-4 p-1.5 mb-1', lecColor(lec)]">
+                    <div class="font-bold text-gray-700 dark:text-gray-200">{{ getSubject(lec.subjectId)?.name || '؟' }}</div>
+                    <div class="text-gray-500 dark:text-gray-400">{{ getProfessor(lec.professorId)?.name || '؟' }}</div>
+                    <div class="text-gray-400 dark:text-gray-500">{{ getLocation(lec.locationId)?.name || '؟' }}</div>
+                  </div>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Workload Report -->
+      <div v-if="reportType === 'workload'" class="card p-4">
+        <h3 class="font-semibold text-gray-800 dark:text-white mb-3">تقرير أعباء العمل</h3>
+        <div class="overflow-x-auto">
+          <table class="data-table w-full">
+            <thead><tr><th>#</th><th>المحاضر</th><th>عدد المحاضرات</th><th>إجمالي الساعات</th><th>التقييم</th></tr></thead>
+            <tbody>
+              <tr v-for="(p, i) in professorWorkload.filter(p=>p.hours>0)" :key="p.id" class="data-row">
+                <td class="text-gray-400 text-xs">{{ i+1 }}</td>
+                <td class="font-medium text-gray-700 dark:text-gray-300">{{ p.name }}</td>
+                <td><span class="badge-blue">{{ lectures.filter(l=>l.professorId===p.id).length }}</span></td>
+                <td>{{ p.hours }} ساعة</td>
+                <td>
+                  <span :class="['badge', p.hours<=10 ? 'badge-green' : p.hours<=16 ? 'badge-yellow' : 'badge-red']">
+                    {{ p.hours<=10 ? 'خفيف' : p.hours<=16 ? 'معتدل' : 'مرتفع' }}
+                  </span>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Conflicts Report -->
+      <div v-if="reportType === 'conflicts'" class="card p-4">
+        <h3 class="font-semibold text-gray-800 dark:text-white mb-3">
+          تقرير التعارضات
+          <span class="badge-red mr-2">{{ allConflicts.length }}</span>
+        </h3>
+        <div v-if="allConflicts.length === 0" class="text-center py-8 text-green-600 dark:text-green-400">
+          <i class="fas fa-check-circle text-4xl mb-2"></i>
+          <p class="font-medium">لا توجد تعارضات في الجدول</p>
+        </div>
+        <div v-else class="overflow-x-auto">
+          <table class="data-table w-full">
+            <thead><tr><th>محاضرة 1</th><th>محاضرة 2</th><th>اليوم / الوقت</th><th>نوع التعارض</th></tr></thead>
+            <tbody>
+              <tr v-for="(c, i) in allConflicts" :key="i" class="data-row bg-red-50 dark:bg-red-900/10">
+                <td class="text-xs">
+                  <div class="font-medium text-gray-700 dark:text-gray-300">{{ getSubject(c.lectureA.subjectId)?.name }}</div>
+                  <div class="text-gray-400">{{ getProfessor(c.lectureA.professorId)?.name }}</div>
+                </td>
+                <td class="text-xs">
+                  <div class="font-medium text-gray-700 dark:text-gray-300">{{ getSubject(c.lectureB.subjectId)?.name }}</div>
+                  <div class="text-gray-400">{{ getProfessor(c.lectureB.professorId)?.name }}</div>
+                </td>
+                <td class="text-xs text-gray-500">{{ c.lectureA.day }} - {{ formatSlot(c.lectureA.startHour) }}</td>
+                <td>
+                  <span v-for="t in c.types" :key="t" class="badge-red ml-1">{{ t }}</span>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div><!-- end reports -->
+
+    <!-- ==================== CHANGE LOG ==================== -->
+    <div v-if="currentPage === 'changelog'">
+      <div class="flex items-center justify-between mb-4">
+        <h1 class="text-xl font-bold text-gray-800 dark:text-white">سجل التغييرات</h1>
+        <input v-model="logSearch" type="text" placeholder="بحث في السجل..." class="form-input w-48" />
+      </div>
+
+      <!-- Stats -->
+      <div class="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-4">
+        <div v-for="s in logStats" :key="s.label" :class="['card p-3 text-center rounded-xl', s.color]">
+          <div class="text-2xl font-bold">{{ s.value }}</div>
+          <div class="text-xs mt-0.5">{{ s.label }}</div>
+        </div>
+      </div>
+
+      <!-- Filters -->
+      <div class="flex gap-1 flex-wrap mb-4">
+        <button v-for="f in logFilters" :key="f.id" @click="logFilter = f.id"
+          :class="['px-3 py-1.5 rounded-lg text-xs font-medium transition-colors', logFilter===f.id ? 'bg-purple-600 text-white' : 'bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-600']">
+          {{ f.label }}
+        </button>
+      </div>
+
+      <!-- Log List -->
+      <div class="card p-4">
+        <div v-if="filteredLog.length === 0" class="text-center py-8 text-gray-400">
+          <i class="fas fa-inbox text-3xl mb-2"></i>
+          <p>لا توجد سجلات</p>
+        </div>
+        <div class="space-y-2">
+          <div v-for="e in filteredLog" :key="e.id" class="flex items-start gap-3 p-3 bg-gray-50 dark:bg-gray-700/50 rounded-lg">
+            <div class="w-8 h-8 rounded-full bg-white dark:bg-gray-700 flex items-center justify-center shrink-0 shadow-sm">
+              <i :class="['fas text-sm', getLogIcon(e.action), getLogColor(e.action)]"></i>
+            </div>
+            <div class="flex-1 min-w-0">
+              <div class="flex items-center gap-2 flex-wrap">
+                <span class="text-sm font-medium text-gray-700 dark:text-gray-300">{{ getLogLabel(e.action) }}</span>
+                <span class="text-xs text-gray-400">{{ formatDate(e.timestamp) }}</span>
+              </div>
+              <div class="text-xs text-gray-500 dark:text-gray-400 mt-0.5">{{ e.description }}</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div><!-- end changelog -->
+
+  </div><!-- end max-w container -->
+
+  <!-- ==================== MODALS ==================== -->
+
+  <!-- Lecture Modal -->
+  <div v-if="lectureModal.show" class="modal-overlay" @click.self="lectureModal.show=false">
+    <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-xl p-6 w-full max-w-lg">
+      <h3 class="text-lg font-bold text-gray-800 dark:text-white mb-4">
+        {{ lectureModal.id ? 'تعديل محاضرة' : 'إضافة محاضرة' }}
+      </h3>
+      <div class="space-y-3">
+        <div>
+          <label class="modal-label">المادة</label>
+          <select v-model="lectureModal.form.subjectId" class="form-input w-full">
+            <option v-for="s in subjects" :key="s.id" :value="s.id">{{ s.name }}</option>
+          </select>
+        </div>
+        <div>
+          <label class="modal-label">المحاضر</label>
+          <select v-model="lectureModal.form.professorId" class="form-input w-full">
+            <option v-for="p in professors" :key="p.id" :value="p.id">{{ p.name }}</option>
+          </select>
+        </div>
+        <div>
+          <label class="modal-label">المكان</label>
+          <select v-model="lectureModal.form.locationId" class="form-input w-full">
+            <option v-for="l in locations" :key="l.id" :value="l.id">{{ l.name }}</option>
+          </select>
+        </div>
+        <div>
+          <label class="modal-label">الفرقة</label>
+          <select v-model="lectureModal.form.groupId" class="form-input w-full">
+            <option v-for="g in groups" :key="g.id" :value="g.id">{{ g.year }} - {{ g.section }}</option>
+          </select>
+        </div>
+        <div class="grid grid-cols-3 gap-3">
+          <div>
+            <label class="modal-label">اليوم</label>
+            <select v-model="lectureModal.form.day" class="form-input w-full">
+              <option v-for="d in DAYS" :key="d" :value="d">{{ d }}</option>
+            </select>
+          </div>
+          <div>
+            <label class="modal-label">وقت البداية</label>
+            <select v-model.number="lectureModal.form.startHour" class="form-input w-full">
+              <option v-for="h in HOURS" :key="h" :value="h">{{ formatSlot(h) }}</option>
+            </select>
+          </div>
+          <div>
+            <label class="modal-label">المدة (ساعات)</label>
+            <select v-model.number="lectureModal.form.duration" class="form-input w-full">
+              <option :value="1">1</option>
+              <option :value="2">2</option>
+              <option :value="3">3</option>
+            </select>
+          </div>
+        </div>
+        <div>
+          <label class="modal-label">النوع</label>
+          <select v-model="lectureModal.form.type" class="form-input w-full">
+            <option>محاضرة</option>
+            <option>سيكشن</option>
+            <option>معمل</option>
+          </select>
+        </div>
+      </div>
+      <div class="flex gap-3 mt-5 justify-end">
+        <button @click="lectureModal.show=false" class="btn-outline px-4 py-2 text-sm">إلغاء</button>
+        <button @click="saveLecture" class="btn-primary px-4 py-2 text-sm">حفظ</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Entity Modal (Professor / Location / Subject / Group) -->
+  <div v-if="entityModal.show" class="modal-overlay" @click.self="entityModal.show=false">
+    <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-xl p-6 w-full max-w-md">
+      <h3 class="text-lg font-bold text-gray-800 dark:text-white mb-4">
+        {{ entityModal.id ? 'تعديل' : 'إضافة' }} {{ entityTypeLabel(entityModal.type) }}
+      </h3>
+      <div class="space-y-3">
+        <div v-if="entityModal.type !== 'group'">
+          <label class="modal-label">الاسم</label>
+          <input v-model="entityModal.form.name" type="text" class="form-input w-full" placeholder="الاسم" />
+        </div>
+        <div v-if="entityModal.type === 'location'">
+          <label class="modal-label">السعة</label>
+          <input v-model.number="entityModal.form.capacity" type="number" class="form-input w-full" />
+        </div>
+        <div v-if="entityModal.type === 'location'">
+          <label class="modal-label">النوع</label>
+          <select v-model="entityModal.form.type" class="form-input w-full">
+            <option value="classroom">قاعة</option>
+            <option value="lecture">مدرج</option>
+            <option value="lab">معمل</option>
+            <option value="online">أونلاين</option>
+          </select>
+        </div>
+        <div v-if="entityModal.type === 'subject'">
+          <label class="modal-label">الكود</label>
+          <input v-model="entityModal.form.code" type="text" class="form-input w-full" placeholder="مثال: CS101" />
+        </div>
+        <div v-if="entityModal.type === 'group'">
+          <label class="modal-label">الفرقة</label>
+          <select v-model="entityModal.form.year" class="form-input w-full">
+            <option>الفرقة الأولى</option>
+            <option>الفرقة الثانية</option>
+            <option>الفرقة الثالثة</option>
+            <option>الفرقة الرابعة</option>
+          </select>
+        </div>
+        <div v-if="entityModal.type === 'group'">
+          <label class="modal-label">التخصص</label>
+          <input v-model="entityModal.form.major" type="text" class="form-input w-full" placeholder="مثال: نظم معلومات الأعمال" />
+        </div>
+        <div v-if="entityModal.type === 'group'">
+          <label class="modal-label">المجموعة</label>
+          <input v-model="entityModal.form.section" type="text" class="form-input w-full" placeholder="مثال: مجموعة (A)" />
+        </div>
+      </div>
+      <div class="flex gap-3 mt-5 justify-end">
+        <button @click="entityModal.show=false" class="btn-outline px-4 py-2 text-sm">إلغاء</button>
+        <button @click="saveEntity" class="btn-primary px-4 py-2 text-sm">حفظ</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Delete Confirmation Modal -->
+  <div v-if="deleteModal.show" class="modal-overlay" @click.self="deleteModal.show=false">
+    <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-xl p-6 w-full max-w-sm text-center">
+      <div class="w-14 h-14 bg-red-100 dark:bg-red-900/30 rounded-full flex items-center justify-center mx-auto mb-3">
+        <i class="fas fa-trash-alt text-red-500 text-2xl"></i>
+      </div>
+      <h3 class="text-lg font-bold text-gray-800 dark:text-white mb-2">تأكيد الحذف</h3>
+      <p class="text-gray-500 dark:text-gray-400 text-sm mb-5">{{ deleteModal.message }}</p>
+      <div class="flex gap-3 justify-center">
+        <button @click="deleteModal.show=false" class="btn-outline px-5 py-2 text-sm">إلغاء</button>
+        <button @click="confirmDelete" class="bg-red-600 hover:bg-red-700 text-white px-5 py-2 rounded-lg text-sm font-medium transition-colors">حذف</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Conflict Modal -->
+  <div v-if="showConflictModal" class="modal-overlay" @click.self="showConflictModal=false">
+    <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-xl p-6 w-full max-w-2xl max-h-[80vh] overflow-y-auto">
+      <div class="flex items-center justify-between mb-4">
+        <h3 class="text-lg font-bold text-gray-800 dark:text-white flex items-center gap-2">
+          <i class="fas fa-exclamation-triangle text-red-500"></i>
+          التعارضات ({{ conflictsCount }})
+        </h3>
+        <button @click="showConflictModal=false" class="text-gray-400 hover:text-gray-600"><i class="fas fa-times text-xl"></i></button>
+      </div>
+      <div v-if="allConflicts.length === 0" class="text-center py-8 text-green-600">
+        <i class="fas fa-check-circle text-4xl mb-2"></i>
+        <p>لا توجد تعارضات</p>
+      </div>
+      <div v-else class="space-y-3">
+        <div v-for="(c, i) in allConflicts" :key="i" class="bg-red-50 dark:bg-red-900/20 rounded-xl p-3">
+          <div class="flex items-center gap-2 mb-2">
+            <span class="badge-red text-xs">{{ c.lectureA.day }} - {{ formatSlot(c.lectureA.startHour) }}</span>
+            <span v-for="t in c.types" :key="t" class="badge-red text-xs">{{ t }}</span>
+          </div>
+          <div class="grid grid-cols-2 gap-2 text-xs">
+            <div class="bg-white dark:bg-gray-700 rounded-lg p-2">
+              <div class="font-medium text-gray-700 dark:text-gray-300">{{ getSubject(c.lectureA.subjectId)?.name }}</div>
+              <div class="text-gray-400">{{ getProfessor(c.lectureA.professorId)?.name }}</div>
+              <div class="text-gray-400">{{ getLocation(c.lectureA.locationId)?.name }}</div>
+            </div>
+            <div class="bg-white dark:bg-gray-700 rounded-lg p-2">
+              <div class="font-medium text-gray-700 dark:text-gray-300">{{ getSubject(c.lectureB.subjectId)?.name }}</div>
+              <div class="text-gray-400">{{ getProfessor(c.lectureB.professorId)?.name }}</div>
+              <div class="text-gray-400">{{ getLocation(c.lectureB.locationId)?.name }}</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Reset Confirmation Modal -->
+  <div v-if="showResetModal" class="modal-overlay" @click.self="showResetModal=false">
+    <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-xl p-6 w-full max-w-sm text-center">
+      <div class="w-14 h-14 bg-orange-100 dark:bg-orange-900/30 rounded-full flex items-center justify-center mx-auto mb-3">
+        <i class="fas fa-rotate text-orange-500 text-2xl"></i>
+      </div>
+      <h3 class="text-lg font-bold text-gray-800 dark:text-white mb-2">إعادة تعيين البيانات</h3>
+      <p class="text-gray-500 dark:text-gray-400 text-sm mb-5">سيتم استعادة جميع البيانات إلى القيم الافتراضية. هذا الإجراء لا يمكن التراجع عنه.</p>
+      <div class="flex gap-3 justify-center">
+        <button @click="showResetModal=false" class="btn-outline px-5 py-2 text-sm">إلغاء</button>
+        <button @click="resetData" class="bg-orange-600 hover:bg-orange-700 text-white px-5 py-2 rounded-lg text-sm font-medium transition-colors">إعادة تعيين</button>
+      </div>
+    </div>
+  </div>
+
+</div><!-- end #app -->
+
+<script src="https://unpkg.com/vue@3/dist/vue.global.prod.js"></script>
+<script src="js/data.js"></script>
+<script src="js/utils.js"></script>
+<script src="js/app.js"></script>
+</body>
 </html>
