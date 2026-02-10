@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>منظم الجداول الدراسية</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+      tailwind.config = {
+        darkMode: 'class',
+        theme: {
+          extend: {
+            fontFamily: {
+              sans: ['Cairo', 'sans-serif'],
+            },
+          },
+        },
+      }
+    </script>
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css"
+      crossorigin="anonymous"
+      referrerpolicy="no-referrer"
+    />
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <style>
+      * { box-sizing: border-box; }
+      ::-webkit-scrollbar { width: 6px; height: 6px; }
+      ::-webkit-scrollbar-track { background: #f1f1f1; }
+      ::-webkit-scrollbar-thumb { background: #888; border-radius: 3px; }
+      ::-webkit-scrollbar-thumb:hover { background: #555; }
+      .dark ::-webkit-scrollbar-track { background: #374151; }
+      .dark ::-webkit-scrollbar-thumb { background: #6b7280; }
+      @media print {
+        @page { size: A3 landscape; margin: 1cm; }
+        body { background: white !important; }
+        .no-print { display: none !important; }
+        body * { visibility: hidden; }
+        .printable-area, .printable-area * { visibility: visible; }
+        .printable-area {
+          position: absolute; left: 0; top: 0; width: 100%;
+        }
+        .printable-area .overflow-x-auto { overflow-x: visible !important; }
+        .printable-area table { width: 100% !important; font-size: 9pt; table-layout: fixed; }
+        .printable-area td, .printable-area th { padding: 4px !important; word-wrap: break-word; }
+      }
+    </style>
+    <script>
+      if (
+        localStorage.getItem('tm_theme') === 'dark' ||
+        (!('tm_theme' in localStorage) &&
+          window.matchMedia('(prefers-color-scheme: dark)').matches)
+      ) {
+        document.documentElement.classList.add('dark');
+      }
+    </script>
+    <script type="module" crossorigin src="/repo-test/assets/index-CPH9jwqW.js"></script>
+  </head>
+  <body class="font-sans bg-gray-100 dark:bg-gray-900 text-gray-900 dark:text-gray-100 min-h-screen">
+    <div id="root"></div>
+  </body>
+</html>
