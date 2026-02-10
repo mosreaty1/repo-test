@@ -370,10 +370,9 @@ createApp({
         showToast('يرجى ملء جميع الحقول المطلوبة', 'error');
         return;
       }
-      const isEdit = !!lectureModal.id;
       undoStack.value.push(JSON.stringify(lectures.value));
       if (undoStack.value.length > 20) undoStack.value.shift();
-      if (isEdit) {
+      if (lectureModal.id) {
         const idx = lectures.value.findIndex(l => l.id === lectureModal.id);
         if (idx >= 0) lectures.value[idx] = { ...f, id: lectureModal.id };
         addLog('update_lecture', `تم تعديل محاضرة: ${getSubject(f.subjectId)?.name || ''}`);
@@ -382,7 +381,7 @@ createApp({
         addLog('add_lecture', `تم إضافة محاضرة: ${getSubject(f.subjectId)?.name || ''}`);
       }
       lectureModal.show = false;
-      showToast(isEdit ? 'تم تعديل المحاضرة' : 'تمت إضافة المحاضرة ✓');
+      showToast(lectureModal.id ? 'تم تعديل المحاضرة' : 'تمت إضافة المحاضرة');
     }
 
     function confirmDeleteLecture(lec) {
@@ -543,18 +542,9 @@ createApp({
       return lectures.value;
     });
     const reportTitle = computed(() => {
-      if (reportType.value === 'group')
-        return reportGroup.value
-          ? `جدول: ${reportGroup.value.year} – ${reportGroup.value.major} – ${reportGroup.value.section}`
-          : 'اختر فرقة لعرض الجدول';
-      if (reportType.value === 'professor') {
-        const p = getProfessor(rp.professor || professors.value[0]?.id);
-        return p ? `جدول المحاضر: ${p.name}` : 'اختر محاضراً';
-      }
-      if (reportType.value === 'location') {
-        const l = getLocation(rp.location || locations.value[0]?.id);
-        return l ? `جدول المكان: ${l.name}` : 'اختر مكاناً';
-      }
+      if (reportType.value === 'group')     return `جدول: ${reportGroup.value?.year} – ${reportGroup.value?.major} – ${reportGroup.value?.section}`;
+      if (reportType.value === 'professor') return `جدول المحاضر: ${getProfessor(rp.professor || professors.value[0]?.id)?.name || ''}`;
+      if (reportType.value === 'location')  return `جدول المكان: ${getLocation(rp.location || locations.value[0]?.id)?.name || ''}`;
       return '';
     });
 

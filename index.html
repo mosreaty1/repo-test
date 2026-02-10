@@ -49,7 +49,10 @@
       <div class="flex items-center gap-0.5 overflow-x-auto">
         <button v-for="item in navItems" :key="item.id"
           @click="currentPage = item.id"
-          :class="['nav-item', currentPage === item.id ? 'nav-active' : '']">
+          :class="['px-2.5 py-1.5 rounded-lg text-xs font-medium transition-colors whitespace-nowrap flex items-center gap-1',
+                   currentPage === item.id
+                     ? 'bg-purple-100 dark:bg-purple-900/40 text-purple-700 dark:text-purple-300'
+                     : 'text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700']">
           <i :class="['fas text-xs', item.icon]"></i>
           <span class="hidden sm:inline">{{ item.label }}</span>
         </button>
@@ -58,8 +61,8 @@
       <div class="flex items-center gap-1.5 shrink-0">
         <button v-if="conflictsCount > 0"
           @click="showConflictModal = true"
-          class="badge badge-red cursor-pointer hover:bg-red-200 dark:hover:bg-red-800/40 transition-colors px-2.5 py-1 conflict-pulse">
-          <i class="fas fa-triangle-exclamation"></i>{{ conflictsCount }} تعارض
+          class="badge badge-red cursor-pointer hover:bg-red-200 dark:hover:bg-red-800/40 transition-colors px-2 py-1">
+          <i class="fas fa-triangle-exclamation ml-1"></i>{{ conflictsCount }} تعارض
         </button>
         <button @click="toggleDark" class="btn-icon" :title="darkMode ? 'الوضع الفاتح' : 'الوضع الداكن'">
           <i :class="['fas', darkMode ? 'fa-sun text-yellow-400' : 'fa-moon text-gray-500 dark:text-gray-400']"></i>
@@ -132,8 +135,8 @@
       <div class="grid grid-cols-1 lg:grid-cols-2 gap-5">
 
         <!-- Professor Workload -->
-        <div class="card card-no-hover">
-          <div class="section-toggle" @click="toggleSection('workload')">
+        <div class="card">
+          <div class="flex items-center justify-between px-5 py-4 cursor-pointer" @click="toggleSection('workload')">
             <h3 class="font-semibold text-gray-800 dark:text-white flex items-center gap-2 text-sm">
               <span class="w-7 h-7 bg-blue-100 dark:bg-blue-900/40 rounded-lg flex items-center justify-center shrink-0">
                 <i class="fas fa-user-tie text-blue-600 dark:text-blue-400 text-xs"></i>
@@ -141,30 +144,27 @@
               أعباء المحاضرين
               <span class="badge badge-blue">{{ filteredWorkload.length }}</span>
             </h3>
-            <i :class="['section-chevron', openSections.workload ? 'rotate-180' : '']"></i>
+            <i :class="['fas fa-chevron-down text-gray-400 text-xs transition-transform duration-200', openSections.workload ? 'rotate-180' : '']"></i>
           </div>
-          <div v-show="openSections.workload" class="px-5 pb-5">
-            <input v-model="profSearch" type="text" placeholder="بحث عن محاضر..." class="form-input mb-3 text-xs py-2" />
-            <div class="space-y-1.5 max-h-64 overflow-y-auto">
-              <div v-for="p in filteredWorkload" :key="p.id" class="workload-row">
-                <div class="workload-name" :title="p.name">{{ p.name }}</div>
-                <div class="flex-1 progress-bar">
-                  <div class="progress-fill bg-gradient-to-l from-blue-400 to-blue-600"
+          <div v-show="openSections.workload" class="px-5 pb-4">
+            <input v-model="profSearch" type="text" placeholder="بحث عن محاضر..." class="form-input mb-3 text-xs py-1.5" />
+            <div class="space-y-2 max-h-64 overflow-y-auto">
+              <div v-for="p in filteredWorkload" :key="p.id" class="flex items-center gap-2">
+                <div class="w-32 text-xs text-gray-600 dark:text-gray-400 truncate text-right shrink-0" :title="p.name">{{ p.name }}</div>
+                <div class="flex-1 bg-gray-100 dark:bg-gray-700 rounded-full h-2 overflow-hidden">
+                  <div class="h-2 rounded-full bg-gradient-to-l from-blue-400 to-blue-600 transition-all duration-500"
                        :style="{width: Math.min(100, p.hours / maxWorkloadHours * 100) + '%'}"></div>
                 </div>
-                <div class="w-10 text-xs font-semibold text-gray-700 dark:text-gray-300 text-left shrink-0">{{ p.hours }}س</div>
+                <div class="w-12 text-xs font-medium text-gray-700 dark:text-gray-300 text-left shrink-0">{{ p.hours }}س</div>
               </div>
-              <div v-if="filteredWorkload.length === 0" class="empty-state py-6">
-                <div class="text-gray-300 dark:text-gray-600 text-2xl mb-1"><i class="fas fa-user-slash"></i></div>
-                <div class="text-xs text-gray-400">لا توجد نتائج</div>
-              </div>
+              <div v-if="filteredWorkload.length === 0" class="text-center text-gray-400 py-6 text-sm">لا توجد نتائج</div>
             </div>
           </div>
         </div>
 
         <!-- Location Usage -->
-        <div class="card card-no-hover">
-          <div class="section-toggle" @click="toggleSection('locations')">
+        <div class="card">
+          <div class="flex items-center justify-between px-5 py-4 cursor-pointer" @click="toggleSection('locations')">
             <h3 class="font-semibold text-gray-800 dark:text-white flex items-center gap-2 text-sm">
               <span class="w-7 h-7 bg-purple-100 dark:bg-purple-900/40 rounded-lg flex items-center justify-center shrink-0">
                 <i class="fas fa-building text-purple-600 dark:text-purple-400 text-xs"></i>
@@ -172,71 +172,61 @@
               استخدام الأماكن
               <span class="badge badge-purple">{{ filteredLocUsage.length }}</span>
             </h3>
-            <i :class="['section-chevron', openSections.locations ? 'rotate-180' : '']"></i>
+            <i :class="['fas fa-chevron-down text-gray-400 text-xs transition-transform duration-200', openSections.locations ? 'rotate-180' : '']"></i>
           </div>
-          <div v-show="openSections.locations" class="px-5 pb-5">
-            <input v-model="locSearch" type="text" placeholder="بحث عن مكان..." class="form-input mb-3 text-xs py-2" />
-            <div class="space-y-1.5 max-h-64 overflow-y-auto">
-              <div v-for="l in filteredLocUsage" :key="l.id" class="workload-row">
-                <div class="workload-name" :title="l.name">{{ l.name }}</div>
-                <div class="flex-1 progress-bar">
-                  <div class="progress-fill bg-gradient-to-l from-purple-400 to-purple-600"
+          <div v-show="openSections.locations" class="px-5 pb-4">
+            <input v-model="locSearch" type="text" placeholder="بحث عن مكان..." class="form-input mb-3 text-xs py-1.5" />
+            <div class="space-y-2 max-h-64 overflow-y-auto">
+              <div v-for="l in filteredLocUsage" :key="l.id" class="flex items-center gap-2">
+                <div class="w-32 text-xs text-gray-600 dark:text-gray-400 truncate text-right shrink-0" :title="l.name">{{ l.name }}</div>
+                <div class="flex-1 bg-gray-100 dark:bg-gray-700 rounded-full h-2 overflow-hidden">
+                  <div class="h-2 rounded-full bg-gradient-to-l from-purple-400 to-purple-600 transition-all duration-500"
                        :style="{width: Math.min(100, l.pct) + '%'}"></div>
                 </div>
-                <div class="w-10 text-xs font-semibold text-gray-700 dark:text-gray-300 text-left shrink-0">{{ l.hours }}س</div>
+                <div class="w-12 text-xs font-medium text-gray-700 dark:text-gray-300 text-left shrink-0">{{ l.hours }}س</div>
               </div>
-              <div v-if="filteredLocUsage.length === 0" class="empty-state py-6">
-                <div class="text-gray-300 dark:text-gray-600 text-2xl mb-1"><i class="fas fa-building-slash"></i></div>
-                <div class="text-xs text-gray-400">لا توجد نتائج</div>
-              </div>
+              <div v-if="filteredLocUsage.length === 0" class="text-center text-gray-400 py-6 text-sm">لا توجد نتائج</div>
             </div>
           </div>
         </div>
 
         <!-- Quality Indicators -->
-        <div class="card card-no-hover">
-          <div class="section-toggle" @click="toggleSection('quality')">
+        <div class="card">
+          <div class="flex items-center justify-between px-5 py-4 cursor-pointer" @click="toggleSection('quality')">
             <h3 class="font-semibold text-gray-800 dark:text-white flex items-center gap-2 text-sm">
               <span class="w-7 h-7 bg-yellow-100 dark:bg-yellow-900/40 rounded-lg flex items-center justify-center shrink-0">
                 <i class="fas fa-star text-yellow-500 text-xs"></i>
               </span>
               مؤشرات الجودة – المحاضرون
             </h3>
-            <i :class="['section-chevron', openSections.quality ? 'rotate-180' : '']"></i>
+            <i :class="['fas fa-chevron-down text-gray-400 text-xs transition-transform duration-200', openSections.quality ? 'rotate-180' : '']"></i>
           </div>
-          <div v-show="openSections.quality" class="overflow-x-auto max-h-72 overflow-y-auto">
+          <div v-show="openSections.quality" class="overflow-x-auto">
             <table class="data-table w-full text-xs">
-              <thead><tr><th>المحاضر</th><th class="text-center">فراغ (ساعة)</th><th class="text-center">أيام طويلة</th><th class="text-center">التقييم</th></tr></thead>
+              <thead><tr><th>المحاضر</th><th class="text-center">فراغ</th><th class="text-center">أيام طويلة</th><th class="text-center">التقييم</th></tr></thead>
               <tbody>
-                <tr v-for="p in qualityIndicators" :key="p.id" class="data-row">
+                <tr v-for="p in qualityIndicators.slice(0, 12)" :key="p.id" class="data-row">
                   <td class="font-medium max-w-[140px] truncate" :title="p.name">{{ p.name }}</td>
                   <td class="text-center"><span :class="['badge', p.gapHours === 0 ? 'badge-green' : p.gapHours <= 2 ? 'badge-yellow' : 'badge-red']">{{ p.gapHours }}س</span></td>
                   <td class="text-center"><span :class="['badge', p.longDays === 0 ? 'badge-green' : p.longDays === 1 ? 'badge-yellow' : 'badge-red']">{{ p.longDays }}</span></td>
                   <td class="text-center"><span :class="['badge', p.score === 'ممتاز' ? 'badge-green' : p.score === 'جيد' ? 'badge-yellow' : 'badge-red']">{{ p.score }}</span></td>
                 </tr>
-                <tr v-if="qualityIndicators.length === 0">
-                  <td colspan="4" class="py-8">
-                    <div class="empty-state py-4">
-                      <div class="text-2xl text-gray-300 mb-1"><i class="fas fa-star-half-stroke"></i></div>
-                      <div class="text-xs text-gray-400">لا توجد بيانات كافية للتحليل</div>
-                    </div>
-                  </td>
-                </tr>
+                <tr v-if="qualityIndicators.length === 0"><td colspan="4" class="text-center text-gray-400 py-6">لا توجد بيانات</td></tr>
               </tbody>
             </table>
           </div>
         </div>
 
         <!-- Group Gaps -->
-        <div class="card card-no-hover">
-          <div class="section-toggle" @click="toggleSection('gaps')">
+        <div class="card">
+          <div class="flex items-center justify-between px-5 py-4 cursor-pointer" @click="toggleSection('gaps')">
             <h3 class="font-semibold text-gray-800 dark:text-white flex items-center gap-2 text-sm">
               <span class="w-7 h-7 bg-orange-100 dark:bg-orange-900/40 rounded-lg flex items-center justify-center shrink-0">
                 <i class="fas fa-clock text-orange-500 text-xs"></i>
               </span>
               الفجوات الزمنية – الفرق
             </h3>
-            <i :class="['section-chevron', openSections.gaps ? 'rotate-180' : '']"></i>
+            <i :class="['fas fa-chevron-down text-gray-400 text-xs transition-transform duration-200', openSections.gaps ? 'rotate-180' : '']"></i>
           </div>
           <div v-show="openSections.gaps" class="overflow-x-auto">
             <table class="data-table w-full text-xs">
@@ -255,15 +245,15 @@
         </div>
 
         <!-- Heatmap -->
-        <div class="card card-no-hover lg:col-span-2">
-          <div class="section-toggle" @click="toggleSection('heatmap')">
+        <div class="card lg:col-span-2">
+          <div class="flex items-center justify-between px-5 py-4 cursor-pointer" @click="toggleSection('heatmap')">
             <h3 class="font-semibold text-gray-800 dark:text-white flex items-center gap-2 text-sm">
               <span class="w-7 h-7 bg-red-100 dark:bg-red-900/40 rounded-lg flex items-center justify-center shrink-0">
                 <i class="fas fa-fire text-red-500 text-xs"></i>
               </span>
               خريطة الاستخدام الحراري
             </h3>
-            <i :class="['section-chevron', openSections.heatmap ? 'rotate-180' : '']"></i>
+            <i :class="['fas fa-chevron-down text-gray-400 text-xs transition-transform duration-200', openSections.heatmap ? 'rotate-180' : '']"></i>
           </div>
           <div v-show="openSections.heatmap" class="px-5 pb-5">
             <select v-model="heatmapLocId" class="form-input mb-4 w-auto text-xs py-1.5">
@@ -375,21 +365,14 @@
         </span>
       </div>
       <!-- Empty state: no group selected -->
-      <div v-if="schedTab === 'class' && !currentGroup" class="card card-no-hover mb-4">
-        <div class="empty-state">
-          <div class="empty-state-icon"><i class="fas fa-users"></i></div>
-          <div class="empty-state-title">اختر الفرقة الدراسية</div>
-          <p class="text-sm text-gray-400 mt-1 max-w-xs">استخدم الفلاتر أعلاه لاختيار الفرقة والتخصص والمجموعة</p>
-          <div class="flex gap-2 mt-5 flex-wrap justify-center">
-            <button v-for="y in uniqueYears" :key="y" @click="sv.year = y"
-              class="px-4 py-2 rounded-xl bg-purple-50 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300 text-sm font-medium hover:bg-purple-100 dark:hover:bg-purple-900/50 transition-colors">
-              {{ y }}
-            </button>
-          </div>
-        </div>
+      <div v-if="schedTab === 'class' && !currentGroup"
+        class="card p-12 text-center text-gray-400 mb-4">
+        <i class="fas fa-users text-4xl text-gray-300 mb-4 block"></i>
+        <div class="font-semibold text-gray-500 mb-1">اختر الفرقة الدراسية</div>
+        <p class="text-sm">استخدم الفلاتر أعلاه لاختيار الفرقة والتخصص والمجموعة</p>
       </div>
 
-      <div v-show="schedTab !== 'class' || !!currentGroup" class="flex gap-4 min-w-0">
+      <div class="flex gap-4">
         <!-- Schedule Grid -->
         <div class="flex-1 min-w-0 overflow-x-auto">
           <table class="w-full text-xs border-collapse min-w-[700px]">
@@ -615,7 +598,7 @@
                 <td class="text-center text-gray-500 text-xs">{{ lectures.filter(lec => lec.locationId === l.id).length }}</td>
                 <td><div class="flex gap-1 justify-end"><button @click="openEntityModal('location', l)" class="btn-icon text-blue-500"><i class="fas fa-pen text-xs"></i></button><button @click="deleteEntity('location', l)" class="btn-icon text-red-400"><i class="fas fa-trash text-xs"></i></button></div></td>
               </tr>
-              <tr v-if="filteredLocations.length === 0"><td colspan="5" class="py-8 text-center text-gray-400 text-sm"><i class="fas fa-search text-2xl text-gray-300 mb-2 block"></i>{{ dataSearch ? `لا توجد نتائج لـ "${dataSearch}"` : 'لا توجد أماكن' }}</td></tr>
+              <tr v-if="filteredLocations.length === 0"><td colspan="5" class="text-center text-gray-400 py-8">لا توجد نتائج</td></tr>
             </tbody>
           </table>
         </div>
@@ -637,7 +620,7 @@
                 <td class="text-center"><span class="badge badge-purple">{{ lectures.filter(l => l.subjectId === s.id).length }}</span></td>
                 <td><div class="flex gap-1 justify-end"><button @click="openEntityModal('subject', s)" class="btn-icon text-blue-500"><i class="fas fa-pen text-xs"></i></button><button @click="deleteEntity('subject', s)" class="btn-icon text-red-400"><i class="fas fa-trash text-xs"></i></button></div></td>
               </tr>
-              <tr v-if="filteredSubjects.length === 0"><td colspan="4" class="py-8 text-center text-gray-400 text-sm"><i class="fas fa-search text-2xl text-gray-300 mb-2 block"></i>{{ dataSearch ? `لا توجد نتائج لـ "${dataSearch}"` : 'لا توجد مواد' }}</td></tr>
+              <tr v-if="filteredSubjects.length === 0"><td colspan="4" class="text-center text-gray-400 py-8">لا توجد نتائج</td></tr>
             </tbody>
           </table>
         </div>
@@ -660,7 +643,7 @@
                 <td class="text-center"><span class="badge badge-orange">{{ lectures.filter(l => l.groupId === g.id).length }}</span></td>
                 <td><div class="flex gap-1 justify-end"><button @click="openEntityModal('group', g)" class="btn-icon text-blue-500"><i class="fas fa-pen text-xs"></i></button><button @click="deleteEntity('group', g)" class="btn-icon text-red-400"><i class="fas fa-trash text-xs"></i></button></div></td>
               </tr>
-              <tr v-if="filteredGroups.length === 0"><td colspan="5" class="py-8 text-center text-gray-400 text-sm"><i class="fas fa-search text-2xl text-gray-300 mb-2 block"></i>{{ dataSearch ? `لا توجد نتائج لـ "${dataSearch}"` : 'لا توجد فرق' }}</td></tr>
+              <tr v-if="filteredGroups.length === 0"><td colspan="5" class="text-center text-gray-400 py-8">لا توجد نتائج</td></tr>
             </tbody>
           </table>
         </div>
@@ -687,7 +670,7 @@
                 <td class="text-center"><span :class="['badge', typeBadgeColor(lec.type)]">{{ lec.type }}</span></td>
                 <td><div class="flex gap-1 justify-end"><button @click="openEditLecture(lec)" class="btn-icon text-blue-500"><i class="fas fa-pen text-xs"></i></button><button @click="confirmDeleteLecture(lec)" class="btn-icon text-red-400"><i class="fas fa-trash text-xs"></i></button></div></td>
               </tr>
-              <tr v-if="filteredLectures.length === 0"><td colspan="9" class="py-8 text-center text-gray-400 text-sm"><i class="fas fa-search text-2xl text-gray-300 mb-2 block"></i>{{ dataSearch ? `لا توجد نتائج لـ "${dataSearch}"` : 'لا توجد محاضرات' }}</td></tr>
+              <tr v-if="filteredLectures.length === 0"><td colspan="9" class="text-center text-gray-400 py-8">لا توجد نتائج</td></tr>
             </tbody>
           </table>
         </div>
@@ -742,28 +725,18 @@
 
       <!-- Schedule Grid Report -->
       <div v-if="reportType === 'group' || reportType === 'professor' || reportType === 'location'"
-           class="card card-no-hover printable-area">
-        <div class="px-4 py-3 border-b border-gray-100 dark:border-gray-700 flex items-center gap-2 flex-wrap no-print">
+           class="card printable-area">
+        <div class="px-4 py-3 border-b border-gray-100 dark:border-gray-700 flex items-center gap-2 no-print">
           <i class="fas fa-calendar text-purple-500 text-sm"></i>
           <span class="font-semibold text-gray-700 dark:text-gray-300 text-sm">{{ reportTitle }}</span>
-          <div class="flex gap-2 mr-auto">
-            <span class="badge badge-purple">{{ reportLectures.length }} محاضرة</span>
-            <span v-if="reportLectures.length > 0" class="badge badge-gray">{{ reportLectures.reduce((s,l) => s + l.duration, 0) }} ساعة</span>
-          </div>
+          <span class="badge badge-gray mr-auto">{{ reportLectures.length }} محاضرة</span>
         </div>
-        <!-- Empty state for reports grid -->
-        <div v-if="reportLectures.length === 0" class="empty-state">
-          <div class="empty-state-icon"><i class="fas fa-calendar-xmark"></i></div>
-          <div class="empty-state-title">لا توجد محاضرات</div>
-          <p class="text-sm text-gray-400 mt-1">اختر فلتراً مختلفاً لعرض الجدول</p>
-        </div>
-        <div v-if="reportLectures.length > 0" class="p-3 overflow-x-auto">
+        <div class="p-3 overflow-x-auto">
           <table class="w-full text-xs border-collapse min-w-[700px]">
             <thead>
               <tr>
                 <th class="sched-header w-20">الوقت</th>
-                <th v-for="d in DAYS" :key="d"
-                  :class="['sched-header', isToday(d) ? 'today-col' : '']">{{ d }}</th>
+                <th v-for="d in DAYS" :key="d" class="sched-header">{{ d }}</th>
               </tr>
             </thead>
             <tbody>
@@ -772,8 +745,7 @@
                   <div class="font-semibold">{{ formatSlot(h) }}</div>
                   <div class="text-gray-400 text-[10px]">{{ formatSlot(h + 1) }}</div>
                 </td>
-                <td v-for="d in DAYS" :key="d"
-                  :class="['sched-cell', isToday(d) ? 'today-cell' : '']">
+                <td v-for="d in DAYS" :key="d" class="sched-cell">
                   <div v-for="lec in getReportCellLectures(d, h)" :key="lec.id" :class="['lec-card text-xs cursor-default', lecColor(lec)]">
                     <div class="font-bold text-gray-800 dark:text-gray-100 leading-snug truncate">{{ getSubject(lec.subjectId)?.name || '؟' }}</div>
                     <div class="text-gray-500 dark:text-gray-400 leading-snug truncate mt-0.5 text-[10px]">{{ getProfessor(lec.professorId)?.name || '؟' }}</div>
@@ -791,7 +763,7 @@
       </div>
 
       <!-- Workload Report -->
-      <div v-if="reportType === 'workload'" class="card card-no-hover">
+      <div v-if="reportType === 'workload'" class="card">
         <div class="px-5 py-4 border-b border-gray-100 dark:border-gray-700 flex items-center gap-2">
           <i class="fas fa-chart-bar text-blue-500 text-sm"></i>
           <h3 class="font-semibold text-gray-800 dark:text-white text-sm">تقرير أعباء العمل</h3>
@@ -817,7 +789,7 @@
       </div>
 
       <!-- Conflicts Report -->
-      <div v-if="reportType === 'conflicts'" class="card card-no-hover">
+      <div v-if="reportType === 'conflicts'" class="card">
         <div class="px-5 py-4 border-b border-gray-100 dark:border-gray-700 flex items-center justify-between">
           <h3 class="font-semibold text-gray-800 dark:text-white text-sm flex items-center gap-2">
             <i class="fas fa-triangle-exclamation text-red-500"></i>تقرير التعارضات
@@ -826,11 +798,11 @@
             {{ allConflicts.length === 0 ? 'لا توجد تعارضات' : allConflicts.length + ' تعارض' }}
           </span>
         </div>
-        <div v-if="allConflicts.length === 0" class="empty-state">
-          <div class="w-20 h-20 bg-green-100 dark:bg-green-900/30 rounded-2xl flex items-center justify-center mb-4 text-4xl text-green-500">
-            <i class="fas fa-circle-check"></i>
+        <div v-if="allConflicts.length === 0" class="text-center py-12">
+          <div class="w-16 h-16 bg-green-100 dark:bg-green-900/30 rounded-full flex items-center justify-center mx-auto mb-3">
+            <i class="fas fa-check-circle text-green-500 text-3xl"></i>
           </div>
-          <div class="empty-state-title text-green-600 dark:text-green-400">لا توجد تعارضات</div>
+          <p class="font-semibold text-green-600 dark:text-green-400">لا توجد تعارضات في الجدول</p>
           <p class="text-sm text-gray-400 mt-1">جميع المحاضرات مجدولة بشكل صحيح</p>
         </div>
         <div v-else class="overflow-x-auto">
@@ -891,33 +863,24 @@
           {{ f.label }}
         </button>
       </div>
-      <!-- Log List (Timeline) -->
-      <div class="card card-no-hover">
-        <div v-if="filteredLog.length === 0" class="empty-state">
-          <div class="empty-state-icon"><i class="fas fa-inbox"></i></div>
-          <div class="empty-state-title">لا توجد سجلات</div>
-          <p class="text-sm text-gray-400 mt-1">ستظهر هنا جميع العمليات المنفذة</p>
+      <!-- Log List -->
+      <div class="card">
+        <div v-if="filteredLog.length === 0" class="text-center py-12">
+          <i class="fas fa-inbox text-4xl text-gray-300 mb-3 block"></i>
+          <p class="text-gray-400">لا توجد سجلات</p>
         </div>
-        <div v-else class="divide-y divide-gray-50 dark:divide-gray-700/30 max-h-[32rem] overflow-y-auto">
+        <div class="divide-y divide-gray-100 dark:divide-gray-700/50">
           <div v-for="e in filteredLog" :key="e.id"
-            class="flex items-start gap-3.5 px-5 py-3.5 hover:bg-gray-50/60 dark:hover:bg-gray-700/20 transition-colors">
-            <!-- Icon -->
-            <div :class="['w-8 h-8 rounded-xl flex items-center justify-center shrink-0 mt-0.5',
-                          e.action.startsWith('add_') ? 'bg-green-100 dark:bg-green-900/40' :
-                          e.action.startsWith('update_') ? 'bg-blue-100 dark:bg-blue-900/40' :
-                          e.action.startsWith('delete_') ? 'bg-red-100 dark:bg-red-900/40' :
-                          'bg-gray-100 dark:bg-gray-700/60']">
-              <i :class="['fas text-[11px]', getLogIcon(e.action), getLogColor(e.action)]"></i>
+            class="flex items-start gap-3 px-5 py-3 hover:bg-gray-50 dark:hover:bg-gray-700/30 transition-colors">
+            <div class="w-8 h-8 rounded-full bg-gray-50 dark:bg-gray-700 flex items-center justify-center shrink-0 mt-0.5 shadow-sm">
+              <i :class="['fas text-xs', getLogIcon(e.action), getLogColor(e.action)]"></i>
             </div>
-            <!-- Content -->
             <div class="flex-1 min-w-0">
               <div class="flex items-center gap-2 flex-wrap">
                 <span class="text-sm font-semibold text-gray-700 dark:text-gray-300">{{ getLogLabel(e.action) }}</span>
-                <span class="text-[11px] text-gray-400 dark:text-gray-500 bg-gray-100 dark:bg-gray-700/60 px-2 py-0.5 rounded-full">
-                  {{ formatDate(e.timestamp) }}
-                </span>
+                <span class="text-xs text-gray-400 bg-gray-100 dark:bg-gray-700 px-2 py-0.5 rounded-full">{{ formatDate(e.timestamp) }}</span>
               </div>
-              <div class="text-xs text-gray-500 dark:text-gray-400 mt-0.5 truncate">{{ e.description }}</div>
+              <div class="text-xs text-gray-500 dark:text-gray-400 mt-0.5">{{ e.description }}</div>
             </div>
           </div>
         </div>
@@ -930,7 +893,7 @@
 
   <!-- Lecture Modal -->
   <div v-if="lectureModal.show" class="modal-overlay" @click.self="lectureModal.show = false">
-    <div class="modal-box bg-white dark:bg-gray-800 rounded-2xl shadow-2xl p-6 w-full max-w-lg max-h-[92vh] overflow-y-auto">
+    <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl p-6 w-full max-w-lg max-h-[92vh] overflow-y-auto">
       <div class="flex items-center justify-between mb-5">
         <h3 class="text-lg font-bold text-gray-900 dark:text-white flex items-center gap-2">
           <i class="fas fa-calendar-plus text-purple-500"></i>
@@ -1017,7 +980,7 @@
 
   <!-- Entity Modal -->
   <div v-if="entityModal.show" class="modal-overlay" @click.self="entityModal.show = false">
-    <div class="modal-box bg-white dark:bg-gray-800 rounded-2xl shadow-2xl p-6 w-full max-w-md">
+    <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl p-6 w-full max-w-md">
       <div class="flex items-center justify-between mb-5">
         <h3 class="text-lg font-bold text-gray-900 dark:text-white">
           {{ entityModal.id ? 'تعديل' : 'إضافة' }} {{ entityTypeLabel(entityModal.type) }}
@@ -1074,7 +1037,7 @@
 
   <!-- Delete Modal -->
   <div v-if="deleteModal.show" class="modal-overlay" @click.self="deleteModal.show = false">
-    <div class="modal-box bg-white dark:bg-gray-800 rounded-2xl shadow-2xl p-6 w-full max-w-sm text-center">
+    <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl p-6 w-full max-w-sm text-center">
       <div class="w-14 h-14 bg-red-100 dark:bg-red-900/30 rounded-full flex items-center justify-center mx-auto mb-4">
         <i class="fas fa-trash-can text-red-500 text-2xl"></i>
       </div>
@@ -1091,7 +1054,7 @@
 
   <!-- Conflicts Modal -->
   <div v-if="showConflictModal" class="modal-overlay" @click.self="showConflictModal = false">
-    <div class="modal-box bg-white dark:bg-gray-800 rounded-2xl shadow-2xl p-6 w-full max-w-2xl max-h-[85vh] overflow-y-auto">
+    <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl p-6 w-full max-w-2xl max-h-[85vh] overflow-y-auto">
       <div class="flex items-center justify-between mb-5">
         <h3 class="text-lg font-bold text-gray-900 dark:text-white flex items-center gap-2">
           <i class="fas fa-triangle-exclamation text-red-500"></i>التعارضات ({{ conflictsCount }})
@@ -1133,7 +1096,7 @@
 
   <!-- Reset Modal -->
   <div v-if="showResetModal" class="modal-overlay" @click.self="showResetModal = false">
-    <div class="modal-box bg-white dark:bg-gray-800 rounded-2xl shadow-2xl p-6 w-full max-w-sm text-center">
+    <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl p-6 w-full max-w-sm text-center">
       <div class="w-14 h-14 bg-orange-100 dark:bg-orange-900/30 rounded-full flex items-center justify-center mx-auto mb-4">
         <i class="fas fa-rotate text-orange-500 text-2xl"></i>
       </div>
